@@ -1,0 +1,94 @@
+<button id="openInstructions" class="instructions-button">Instructions</button>
+
+<div id="instructionsModal" class="modal hidden">
+    <div class="modal-content">
+        <span id="closeInstructions" class="close-button">&times;</span>
+        <h2>How to Play</h2>
+        <p>Guess the words in a limited number of tries.</p>
+        <p>Press Enter to submit your guess.</p>
+        <p>Colors indicate the correctness of each letter:</p>
+        <p>&nbsp;<span class="purple-text">purple</span> = correct letter and position</p>
+        <p>&nbsp;<span class="orange-text">orange</span> = correct letter, wrong position</p>
+        <p>&nbsp;<span class="grey-text">grey</span> = wrong letter</p>
+        <p>Each word contains an increasing # of letters from the previous word, starting with 1 letter and moving to 3. Example:</p>
+        <p>&nbsp;bad</p>
+        <p>&nbsp;<span class="purple-text">a</span>che</p>
+        <p>&nbsp;<span class="purple-text">h</span>ig<span class="purple-text">h</span></p>
+        <p>&nbsp;fr<span class="purple-text">igh</span>t</p>
+        <p>This puzzle will reset every day at 12am EST</p>
+    </div>
+</div>
+
+<div class="counter"></div>
+<button id="copyResults" class="copy-results-button hidden">Share Results</button>
+
+<div class="pyramid">
+    <div class="row">
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+    </div>
+    <div class="row">
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+    </div>
+    <div class="row">
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+    </div>
+    <div class="row">
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+    </div>
+</div>
+
+<div class="keyboard">
+    <div class="key-row">
+        <button class="key">Q</button>
+        <button class="key">W</button>
+        <button class="key">E</button>
+        <button class="key">R</button>
+        <button class="key">T</button>
+        <button class="key">Y</button>
+        <button class="key">U</button>
+        <button class="key">I</button>
+        <button class="key">O</button>
+        <button class="key">P</button>
+    </div>
+    <div class="key-row">
+        <button class="key">A</button>
+        <button class="key">S</button>
+        <button class="key">D</button>
+        <button class="key">F</button>
+        <button class="key">G</button>
+        <button class="key">H</button>
+        <button class="key">J</button>
+        <button class="key">K</button>
+        <button class="key">L</button>
+    </div>
+    <div class="key-row">
+        <button class="key enter">ENTER</button>
+        <button class="key">Z</button>
+        <button class="key">X</button>
+        <button class="key">C</button>
+        <button class="key">V</button>
+        <button class="key">B</button>
+        <button class="key">N</button>
+        <button class="key">M</button>
+        <button class="key backspace">⌫</button>
+    </div>
+</div>  
+  
