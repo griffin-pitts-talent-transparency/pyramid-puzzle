@@ -6,3 +6,10 @@ app/**/*.sh
 .DS_Store
 app/testfile
 app/print_structure.sh
+
+
+# Ignore Go binaries
+**/server
+**/*.exe
+**/*.out
+**/*.test
