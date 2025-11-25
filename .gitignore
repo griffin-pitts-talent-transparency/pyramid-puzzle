@@ -1,1 +1,8 @@
-.env
+app/secure/data/userdata.db
+app/.env
+app/*.py
+app/*.sh
+!app/local_run.sh
+**/.DS_Store
+app/testfile
+app/print_structure.sh
