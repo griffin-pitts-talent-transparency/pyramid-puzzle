@@ -41,6 +41,8 @@ function renderActiveTiles(currentGuess) {
 }
 
 function setActiveRow() {
+    document.activeElement?.blur();
+    window.getSelection()?.removeAllRanges();
     const pyramid = document.querySelector('.pyramid');
 
     if (pyramid) {

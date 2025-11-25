@@ -176,7 +176,7 @@ async function handleKeyPress(key) {
         }  else if (key === 'ENTER') {
             if (currentGuess.length === expectedLength) {
                 const submitted = currentGuess.join("").toLowerCase().split("");
-                currentGuess = []; 
+                currentGuess = [];
                 handleGuess(submitted)
             }
         }

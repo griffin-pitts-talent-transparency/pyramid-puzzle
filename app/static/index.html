@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <link href="https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <title>Pyramid Puzzle</title>
     <meta name="description" content="Play Pyramid Puzzle — a unique word-guessing challenge where you solve a pyramid of words in sequence.">
 
@@ -31,16 +32,28 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"> -->
 
     <!-- Manifest -->
-    <link rel="manifest" href="/site.webmanifest">
+    <link rel="manifest" href="/site.webmanifest?v=2.0">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=2.0">
+    <script>
+        (function () {
+            const htmlVersion = 'v2.0';
+            try {
+                if (localStorage.getItem('htmlVersion') !== htmlVersion) {
+                    localStorage.setItem('htmlVersion', htmlVersion);
+                    location.reload(true);
+                }
+            } catch (e) {
+            }
+        })();
+    </script>
 </head>
 <body>
     <div id="game-container" class="game-screen"></div>
 
-    <script type="module" src="/js/loadPartials.js"></script>
-    <script type="module" src="/js/game.js"></script>
+    <script type="module" src="/js/loadPartials.js?v=2.0"></script>
+    <script type="module" src="/js/game.js?v=2.0"></script>
     <!--
     We use a word list heavily derived from the 12dicts word list
     (version 6.0.2), created by Alan Beale and used under its
