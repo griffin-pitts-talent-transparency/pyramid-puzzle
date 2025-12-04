@@ -1,4 +1,4 @@
-// full_game.js
+// game.js
 import {
 	initializeUser,
     readFingerprint,
@@ -18,7 +18,8 @@ import {
     clearKeyboardColors, 
     showEndMessage,
     buildEmojiResultsFromDOM,
-    showToast
+    showToast,
+    updateStatsGraphBar
 } from './render.js';
 
 let currentGuess = []; // For in-progress letter input
@@ -88,13 +89,33 @@ async function initializeGameSession() {
                     // player still has guesses remaining
                     renderGuessCounter(countData.remainingGuesses);
                     setActiveRow();
+                    currentGuess = [];
                 } else {
                     // gameStatus = "lost";
-                    showEndMessage("Game over; you lost...");
+                    // showEndMessage("Game over; you lost...");
+                    try {
+                        const revealResp = await fetch("/api/v1.0/reveal-next-word", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ fingerprint })
+                        });
+                    
+                        if (revealResp.ok) {
+                            const revealData = await revealResp.json();
+                            const solutionWord = extractWord(revealData.nextWord);
+                            showEndMessage(`Game over; you lost... The word was "${solutionWord}"`);
+                        } else {
+                            showEndMessage("Game over; you lost...");
+                        }
+                    } catch {
+                        showEndMessage("Game over; you lost...");
+                    }
+                    await loadAndDisplayStatsGraph();
                 }
 
             } else if (gameStatus === "won") {
                 showEndMessage("Game over; you WON!");
+                await loadAndDisplayStatsGraph();
             }
 		}
 	}
@@ -152,10 +173,71 @@ async function handleGuess(submittedGuess) {
                     setActiveRow();
                 }
             } else {
-                showEndMessage("Game over; you lost...");
+                // showEndMessage("Game over; you lost...");
+                try {
+                    const revealResp = await fetch("/api/v1.0/reveal-next-word", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ fingerprint })
+                    });
+                
+                    if (revealResp.ok) {
+                        const revealData = await revealResp.json();
+                        const solutionWord = extractWord(revealData.nextWord);
+                        showEndMessage(`Game over; you lost... The word was "${solutionWord}"`);
+                    } else {
+                        showEndMessage("Game over; you lost...");
+                    }
+                } catch {
+                    showEndMessage("Game over; you lost...");
+                }
+                await loadAndDisplayStatsGraph();
             }
         }
     }
+}
+
+/*
+    Helpers
+*/
+let showTodayStats = true;
+async function loadAndDisplayStatsGraph() {
+    const date = showTodayStats ? getTodayNY() : ""; // blank = all-time
+    const data = await fetchStats(date);
+    updateStatsGraphBar("bar4Solved", "bar4Unsolved", data.pct4);
+    updateStatsGraphBar("bar5Solved", "bar5Unsolved", data.pct5);
+    updateStatsGraphBar("bar6Solved", "bar6Unsolved", data.pct6);
+    updateStatsGraphBar("bar7Solved", "bar7Unsolved", data.pct7);
+}
+
+function getTodayNY() {
+    const ny = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
+    const d = new Date(ny);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+async function fetchStats(date) {
+    try {
+        const res = await fetch("/api/v1.0/get-solved-tier-stats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ date })
+        });
+        if (!res.ok) {
+            throw new Error(await res.text());
+        }
+        return await res.json();
+    } catch (err) {
+        throw err;
+    }
+}
+
+let lastKeyTime = 0;
+async function safeHandleKeyPress(key) {
+    const now = performance.now();
+    if (now - lastKeyTime < 25) return; // prevent ghost double input
+    lastKeyTime = now;
+    await handleKeyPress(key);
 }
 
 async function handleKeyPress(key) {
@@ -189,9 +271,14 @@ function initializeKeyboard() {
     keys.forEach((key) => {
             key.addEventListener('click', async () => {
             const keyValue = key.textContent.trim();
-            await handleKeyPress(keyValue);
+            await safeHandleKeyPress(keyValue);
         });
     });
+}
+
+function extractWord(letterResultArray) {
+    if (!Array.isArray(letterResultArray)) return "";
+    return letterResultArray.map(x => x.letter).join("").toUpperCase();
 }
 
 /*
@@ -204,8 +291,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     await initializeGameSession();
     initializeInstructionsModal();
     initializeKeyboard();
-    // renderGuessCounter(gameState);
-
     
     window.addEventListener('keydown', (e) => {
         let key = e.key;
@@ -215,19 +300,67 @@ window.addEventListener('DOMContentLoaded', async () => {
         else if (key === 'Backspace') key = '⌫';
         else key = key.toUpperCase();
     
-        handleKeyPress(key);
+        safeHandleKeyPress(key);
     });
 
-    const copyBtn = document.getElementById('copyResults');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', async () => {
-            const share = buildEmojiResultsFromDOM();
+   /*
+        Initialize share buttons
+    */
+    const copyBtn = document.getElementById("copyToClipboard");
+    const smsBtn = document.getElementById("smsShare");
+    const twitterBtn = document.getElementById("twitterShare");
+    const facebookBtn = document.getElementById("facebookShare");
+    const instagramBtn = document.getElementById("instagramShare");
 
-            try {
-                await navigator.clipboard.writeText(share);
-                showToast("Results Copied to Clipboard");
-            } catch (e) {
-            }
+    const buildShareText = () => buildEmojiResultsFromDOM();
+    const encoded = () => encodeURIComponent(buildShareText());
+
+    if (copyBtn) {
+        copyBtn.addEventListener("click", () => {
+            navigator.clipboard.writeText(buildShareText());
+            showToast("Copied!");
         });
     }
+
+    if (smsBtn) {
+        smsBtn.addEventListener("click", () => {
+            window.location.href = `sms:?body=${encoded()}`;
+        });
+    }
+    
+    if (twitterBtn) {
+        twitterBtn.addEventListener("click", () => {
+            window.open(
+                `https://twitter.com/intent/tweet?text=${encoded()}`,
+                "_blank"
+            );
+        });
+    }
+    
+    if (facebookBtn) {
+        facebookBtn.addEventListener("click", () => {
+            window.open(
+                `https://www.facebook.com/sharer/sharer.php?u=https://lebron-games.com&quote=${encoded()}`,
+                "_blank"
+            );
+        });
+    }
+
+    document.querySelectorAll('.toggle-option').forEach(button => {
+        button.addEventListener('click', async () => {
+            const selectedView = button.dataset.view;
+            if (selectedView === 'today') {
+                showTodayStats = true;
+            } else if (selectedView === 'all-time') {
+                showTodayStats = false;
+            }
+
+            // Update active state
+            document.querySelectorAll('.toggle-option').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            // Reload graph
+            await loadAndDisplayStatsGraph();
+        });
+    });
 });

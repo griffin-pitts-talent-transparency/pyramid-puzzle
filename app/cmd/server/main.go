@@ -40,10 +40,12 @@ func main() {
 	}
 
 	http.HandleFunc("/api/v1.0/validate-guess", svc.HandleValidateGuessEndpoint)
+	http.HandleFunc("/api/v1.0/get-solved-tier-stats", svc.HandleReadSolvedTierStats)
 	http.HandleFunc("/api/v1.0/get-today-remaining-guesses", svc.HandleGetTodayRemainingGuessesEndpoint)
 	http.HandleFunc("/api/v1.0/load-today-game", svc.HandleLoadTodayGameEndpoint)
 	http.HandleFunc("/api/v1.0/get-next-word-hint", svc.HandleGetNextWordHint)
 	http.HandleFunc("/api/v1.0/get-user", handleUser)
+	http.HandleFunc("/api/v1.0/reveal-next-word", svc.HandleRevealNextWord)
 	// err = svc.PrintFullPuzzle()
 	if err != nil {
 		log.Fatalf("❌ Failed to print puzzle: %v", err)
@@ -74,6 +76,7 @@ func handleUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("❌ Failed to open SQLite DB: %v", err)
 	}
+	defer userDB.Close()
 
 	// Try to read user by fingerprint
 	readSQLBytes, err := os.ReadFile("./secure/queries/read_user.sql")

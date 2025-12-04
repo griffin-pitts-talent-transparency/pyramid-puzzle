@@ -24,6 +24,7 @@ type Service struct {
 	initializeGameState     *sql.Stmt
 	readGameState           *sql.Stmt
 	readIncorrectGuessCount *sql.Stmt
+	readSolvedTierStats     *sql.Stmt
 	updateGameState         *sql.Stmt
 }
 
@@ -69,6 +70,10 @@ func NewService(puzzleDB *sql.DB, userDB *sql.DB) (*Service, error) {
 		return nil, err
 	}
 	s.readIncorrectGuessCount, err = prepareSQL(userDB, "./secure/queries/read_incorrect_guess_count.sql")
+	if err != nil {
+		return nil, err
+	}
+	s.readSolvedTierStats, err = prepareSQL(userDB, "./secure/queries/read_solved_tier_stats.sql")
 	if err != nil {
 		return nil, err
 	}
@@ -233,6 +238,63 @@ func (s *Service) HandleGetNextWordHint(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+func (s *Service) HandleRevealNextWord(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Fingerprint string `json:"fingerprint"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	nextWord, err := s.RevealNextWord(req.Fingerprint)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"nextWord": nextWord,
+	})
+}
+
+func (s *Service) HandleReadSolvedTierStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Date string `json:"date"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	pct4, pct5, pct6, pct7, err := s.ReadSolvedTierStats(req.Date)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"pct4": pct4,
+		"pct5": pct5,
+		"pct6": pct6,
+		"pct7": pct7,
+	})
+}
+
 /*
 Endpoint connector logic
 */
@@ -368,6 +430,74 @@ func (s *Service) GetNextWordHint(fingerprint string) ([]LetterResult, error) {
 	}
 
 	return letterResult, nil
+}
+
+func (s *Service) RevealNextWord(fingerprint string) ([]LetterResult, error) {
+	err := s.BuildCurrentPuzzle()
+	if err != nil {
+		return nil, err
+	}
+
+	state, err := s.GetTodayGameState(fingerprint)
+	if err != nil {
+		return nil, err
+	}
+	if state.Guesses == nil || len(state.Guesses) == 0 {
+		return nil, fmt.Errorf("no guesses available")
+	}
+
+	remainingGuesses := 11 - CountIncorrectGuesses(state.Guesses)
+	if remainingGuesses > 0 {
+		return nil, fmt.Errorf("game not finished")
+	}
+
+	lastGuess := state.Guesses[len(state.Guesses)-1]
+	lastGuessLen := len(lastGuess) // number of letters
+
+	// Determine which puzzleWords index corresponds
+	tier := lastGuessLen - 4
+	if tier < 0 || tier >= len(s.puzzleWords) {
+		return nil, fmt.Errorf("invalid tier computed: %d", tier)
+	}
+
+	solution := s.puzzleWords[tier]
+
+	// Convert solution string into []LetterResult
+	letterResult := make([]LetterResult, len(solution))
+	for i, ch := range solution {
+		letterResult[i] = LetterResult{
+			Letter: string(ch),
+			Status: "match", // revealing full solution
+		}
+	}
+
+	return letterResult, nil
+}
+
+func (s *Service) ReadSolvedTierStats(date string) (float64, float64, float64, float64, error) {
+	// Treat empty string as NULL parameter
+	var dateParam any
+	if strings.TrimSpace(date) == "" {
+		dateParam = nil
+	} else {
+		dateParam = date
+	}
+
+	var pct4, pct5, pct6, pct7 float64
+
+	err := s.readSolvedTierStats.QueryRow(
+		sql.Named("date", dateParam),
+	).Scan(&pct4, &pct5, &pct6, &pct7)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No data for date (probably)
+			return 0, 0, 0, 0, nil
+		}
+		return 0, 0, 0, 0, fmt.Errorf("readSolvedTierStats failed: %w", err)
+	}
+
+	return pct4, pct5, pct6, pct7, nil
 }
 
 /*

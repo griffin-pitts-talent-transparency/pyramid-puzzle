@@ -206,8 +206,13 @@ function showEndMessage(text) {
         counterDiv.appendChild(span);
     }
 
-    const copyBtn = document.getElementById('copyResults');
-    if (copyBtn) copyBtn.classList.remove('hidden');
+    // const copyBtn = document.getElementById('copyResults');
+    // if (copyBtn) copyBtn.classList.remove('hidden');
+
+    // Show the new share section
+    const shareSection = document.getElementById('shareResultsSection');
+    if (shareSection) shareSection.classList.remove('hidden');
+
 
     document.querySelector('.end-message')?.classList.add('pulse');
 
@@ -288,7 +293,8 @@ function showToast(message) {
     const toast = document.createElement('div');
     toast.textContent = message;
     toast.className = 'toast-message';
-    document.body.appendChild(toast);
+    // document.body.appendChild(toast);
+    document.querySelector('.share-section').after(toast);
 
     // Start fade-out after 1.5 seconds
     setTimeout(() => {
@@ -299,6 +305,34 @@ function showToast(message) {
     toast.addEventListener('transitionend', () => {
         toast.remove();
     });
+}
+
+function updateStatsGraphBar(idSolved, idUnsolved, solvedPctRaw) {
+    const solved = document.getElementById(idSolved);
+    const unsolved = document.getElementById(idUnsolved);
+    const label = solved.querySelector(".bar-label");
+
+    const solvedPct = Math.max(0, Math.min(100, solvedPctRaw));
+    const unsolvedPct = 100 - solvedPct;
+
+    solved.style.width = `${solvedPct}%`;
+    unsolved.style.width = `${unsolvedPct}%`;
+
+    if (solvedPct > 0) {
+        label.textContent = `${Math.round(solvedPct)}%`;
+        label.style.display = "block";
+
+        // Decide if it fits inside
+        if (solvedPct < 19) {
+            label.classList.add("outside");
+        } else {
+            label.classList.remove("outside");
+        }
+    } else {
+        label.textContent = "0%";
+        label.style.display = "block";
+        label.classList.add("outside");
+    }
 }
 
 
@@ -313,3 +347,4 @@ export { clearKeyboardColors };
 export { showEndMessage };
 export { buildEmojiResultsFromDOM };
 export { showToast };
+export { updateStatsGraphBar };

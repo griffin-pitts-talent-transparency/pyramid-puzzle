@@ -7,7 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <title>Pyramid Puzzle</title>
-    <meta name="description" content="Play Pyramid Puzzle — a unique word-guessing challenge where you solve a pyramid of words in sequence.">
+    <meta name="description" content="Play Pyramid Puzzle - a daily multi-tier word puzzle. Solve 4-, 5-, 6-, and 7-letter words that share letters. A fast, strategic Wordle-style challenge updated daily at midnight EST.">
+    <meta name="revisit-after" content="1 day">
 
     <!-- SEO Keywords -->
     <meta name="keywords" content="Pyramid Puzzle, wordle variant, word game, puzzle game, word pyramid, brain teaser, wordle alternative">
@@ -21,15 +22,18 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://lebron-games.com/">
     <meta property="og:locale" content="en_US">
+    <meta property="og:image" content="https://lebron-games.com/img/pyramid_preview.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/jpeg">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Pyramid Puzzle">
     <meta name="twitter:description" content="A wordle-style game where you climb a pyramid of puzzles.">
+    <meta name="twitter:image" content="https://lebron-games.com/img/pyramid_preview.jpg">
 
-    <!-- Favicon -->
-    <!-- <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"> -->
+    <link rel="image_src" href="https://lebron-games.com/img/pyramid_preview.jpg">
 
     <!-- Manifest -->
     <link rel="manifest" href="/site.webmanifest?v=2.0">
@@ -50,8 +54,15 @@
     </script>
 </head>
 <body>
+    <h1 class="hidden">Pyramid Puzzle - A Daily Word Game</h1>
     <div id="game-container" class="game-screen"></div>
-
+    <noscript>Pyramid Puzzle cannot run without JavaScript.</noscript>
+    <section id="seo-content" class="hidden">
+        <h1>Pyramid Puzzle - A Daily Word Game</h1>
+        <p>Pyramid Puzzle is a daily word-guessing challenge. Solve a 4, 5, 6 and 7-letter word in sequence, each sharing letters.</p>
+        <p>Play once per day. Reset at midnight EST.</p>
+        <p>A strategic alternative to Wordle with multi-tier word puzzles.</p>
+    </section>
     <script type="module" src="/js/loadPartials.js?v=2.0"></script>
     <script type="module" src="/js/game.js?v=2.0"></script>
     <!--
