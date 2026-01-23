@@ -1,6 +1,8 @@
 -- insert_user.sql
 INSERT INTO users (
     fingerprint,
+    cognito_sub,
+    cognito_username,
     ip,
     user_agent,
     device_type,
@@ -8,6 +10,8 @@ INSERT INTO users (
 )
 SELECT
     :fingerprint,
+    :cognito_sub,
+    :cognito_username,
     :ip,
     :user_agent,
     :device_type,

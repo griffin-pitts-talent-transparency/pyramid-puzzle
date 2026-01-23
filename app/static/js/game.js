@@ -11,7 +11,7 @@ import {
     initializeInstructionsModal,
     renderActiveTiles,
     setActiveRow,
-    renderGuessResult, 
+    renderGuessResult,
     addBlankRow, 
     renderGuessCounter, 
     colorKeyboardKeys, 
@@ -25,14 +25,25 @@ import {
 let currentGuess = []; // For in-progress letter input
 
 async function initializeGameSession() {
-	await initializeUser();
+    // const user = await getUserAsync();
+	await initializeUser(); // add user as a param
 
 	const fingerprint = readFingerprint();
+    const startHint = document.getElementById("startHint");
 
 	if (fingerprint) {
 		const loadedState = await loadTodayGameState(fingerprint);
 		if (loadedState) {
             let gameStatus = "playing";
+            const hasAnyGuesses =
+                Array.isArray(loadedState.guesses) &&
+                loadedState.guesses.length > 0;
+
+            if (startHint) {
+                if (hasAnyGuesses) startHint.classList.add("hidden");
+                else startHint.classList.remove("hidden");
+            }
+
 			for (const guessResult of loadedState.guesses) {
                 let count = 0;
                 let isCorrect = true;
@@ -40,13 +51,7 @@ async function initializeGameSession() {
                     count = guessResult.length;
                     renderGuessResult(guessResult);
             
-                    // determine if this guess is fully correct
-                    for (let i = 0; i < guessResult.length; i++) {
-                        const letterObj = guessResult[i];
-                        if (letterObj.status !== "match") {
-                            isCorrect = false;
-                        }
-                    }
+                    isCorrect = isGuessCorrect(guessResult);
                 } else {
                     isCorrect = false;
                 }
@@ -91,31 +96,17 @@ async function initializeGameSession() {
                     setActiveRow();
                     currentGuess = [];
                 } else {
-                    // gameStatus = "lost";
-                    // showEndMessage("Game over; you lost...");
-                    try {
-                        const revealResp = await fetch("/api/v1.0/reveal-next-word", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ fingerprint })
-                        });
-                    
-                        if (revealResp.ok) {
-                            const revealData = await revealResp.json();
-                            const solutionWord = extractWord(revealData.nextWord);
-                            showEndMessage(`Game over; you lost... The word was "${solutionWord}"`);
-                        } else {
-                            showEndMessage("Game over; you lost...");
-                        }
-                    } catch {
-                        showEndMessage("Game over; you lost...");
-                    }
-                    await loadAndDisplayStatsGraph();
+                    await Promise.all([
+                        revealLossHintAndShowMessage(fingerprint),
+                        loadAndDisplayStatsGraph(true)
+                    ]);
+                    initializeShareToggle();
                 }
 
             } else if (gameStatus === "won") {
                 showEndMessage("Game over; you WON!");
-                await loadAndDisplayStatsGraph();
+                await loadAndDisplayStatsGraph(true);
+                initializeShareToggle();
             }
 		}
 	}
@@ -134,25 +125,24 @@ async function handleGuess(submittedGuess) {
         });
     
         if (res.ok) {
-            const data = await res.json();
+            const startHint = document.getElementById("startHint");
+            startHint.classList.add("hidden");
 
-            colorKeyboardKeys(data.guessResult);
-            renderGuessResult(data.guessResult);
+            const data = await res.json();
+            const guessResult = data.guessResult;
+
+            colorKeyboardKeys(guessResult);
+            renderGuessResult(guessResult);
             renderGuessCounter(data.remainingGuesses);
             
             if(data.remainingGuesses > 0) {
-                let count = data.guessResult.length;;
-                let isCorrect = true;
-                // determine if this guess is fully correct
-                for (let i = 0; i < data.guessResult.length; i++) {
-                    const letterObj = data.guessResult[i];
-                    if (letterObj.status !== "match") {
-                        isCorrect = false;
-                    }
-                }
+                let count = guessResult.length;;
+                let isCorrect = isGuessCorrect(guessResult);
 
                 if(isCorrect && count === 7) {
                     showEndMessage("Game over; you WON!");
+                    await loadAndDisplayStatsGraph();
+                    initializeShareToggle();
                 } else if(isCorrect) {
                     count++;
                     clearKeyboardColors();
@@ -173,25 +163,11 @@ async function handleGuess(submittedGuess) {
                     setActiveRow();
                 }
             } else {
-                // showEndMessage("Game over; you lost...");
-                try {
-                    const revealResp = await fetch("/api/v1.0/reveal-next-word", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ fingerprint })
-                    });
-                
-                    if (revealResp.ok) {
-                        const revealData = await revealResp.json();
-                        const solutionWord = extractWord(revealData.nextWord);
-                        showEndMessage(`Game over; you lost... The word was "${solutionWord}"`);
-                    } else {
-                        showEndMessage("Game over; you lost...");
-                    }
-                } catch {
-                    showEndMessage("Game over; you lost...");
-                }
-                await loadAndDisplayStatsGraph();
+                await Promise.all([
+                    revealLossHintAndShowMessage(fingerprint),
+                    loadAndDisplayStatsGraph(true)
+                ]);
+                initializeShareToggle();
             }
         }
     }
@@ -200,9 +176,36 @@ async function handleGuess(submittedGuess) {
 /*
     Helpers
 */
-let showTodayStats = true;
-async function loadAndDisplayStatsGraph() {
-    const date = showTodayStats ? getTodayNY() : ""; // blank = all-time
+async function revealLossHintAndShowMessage(fingerprint) {
+	try {
+		const revealResp = await fetch("/api/v1.0/reveal-next-word", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ fingerprint })
+		});
+
+		if (revealResp.ok) {
+			const revealData = await revealResp.json();
+			const solutionWord = extractWord(revealData.nextWord);
+			showEndMessage(`Game over; you lost... The word was "${solutionWord}"`);
+		} else {
+			showEndMessage("Game over; you lost...");
+		}
+	} catch {
+		showEndMessage("Game over; you lost...");
+	}
+}
+
+function isGuessCorrect(guessResult) {
+	let result = false;
+    if (Array.isArray(guessResult)) {
+    	result = guessResult.every(letterObj => letterObj.status === "match");
+    }
+    return result;
+}
+
+async function loadAndDisplayStatsGraph(today) {
+    const date = today ? getTodayNY() : ""; // blank = all-time
     const data = await fetchStats(date);
     updateStatsGraphBar("bar4Solved", "bar4Unsolved", data.pct4);
     updateStatsGraphBar("bar5Solved", "bar5Unsolved", data.pct5);
@@ -281,6 +284,28 @@ function extractWord(letterResultArray) {
     return letterResultArray.map(x => x.letter).join("").toUpperCase();
 }
 
+function initializeShareToggle() {
+    const sharePanel = document.getElementById("shareResultsSection");
+    const openBtn = document.getElementById("openShare");
+    const closeBtn = document.getElementById("closeShare");
+
+    if (!sharePanel || !openBtn || !closeBtn) return;
+
+    // Start in visible state
+    sharePanel.classList.remove("hidden");
+    openBtn.classList.add("hidden");
+
+    openBtn.addEventListener("click", () => {
+        sharePanel.classList.remove("hidden");
+        openBtn.classList.add("hidden");
+    });
+
+    closeBtn.addEventListener("click", () => {
+        sharePanel.classList.add("hidden");
+        openBtn.classList.remove("hidden");
+    });
+}
+
 /*
     main
 */
@@ -299,18 +324,17 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (key === 'Enter') key = 'ENTER';
         else if (key === 'Backspace') key = '⌫';
         else key = key.toUpperCase();
-    
         safeHandleKeyPress(key);
     });
 
-   /*
+    /*
         Initialize share buttons
     */
     const copyBtn = document.getElementById("copyToClipboard");
     const smsBtn = document.getElementById("smsShare");
     const twitterBtn = document.getElementById("twitterShare");
     const facebookBtn = document.getElementById("facebookShare");
-    const instagramBtn = document.getElementById("instagramShare");
+    // const instagramBtn = document.getElementById("instagramShare");
 
     const buildShareText = () => buildEmojiResultsFromDOM();
     const encoded = () => encodeURIComponent(buildShareText());
@@ -350,17 +374,15 @@ window.addEventListener('DOMContentLoaded', async () => {
         button.addEventListener('click', async () => {
             const selectedView = button.dataset.view;
             if (selectedView === 'today') {
-                showTodayStats = true;
+                await loadAndDisplayStatsGraph(true);
             } else if (selectedView === 'all-time') {
-                showTodayStats = false;
+                await loadAndDisplayStatsGraph(false);
             }
 
             // Update active state
             document.querySelectorAll('.toggle-option').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-
-            // Reload graph
-            await loadAndDisplayStatsGraph();
+            
         });
     });
 });

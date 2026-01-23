@@ -1,6 +1,8 @@
 -- read_user.sql
 SELECT
     id,
+    cognito_sub,
+    cognito_username,
     fingerprint,
     ip,
     user_agent,
@@ -11,4 +13,5 @@ FROM users
 WHERE (
     (:fingerprint IS NOT NULL AND TRIM(:fingerprint) != '')
     AND (fingerprint = :fingerprint)
-);
+)
+LIMIT 1;

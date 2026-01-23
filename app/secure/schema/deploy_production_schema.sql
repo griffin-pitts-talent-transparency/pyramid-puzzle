@@ -5,13 +5,15 @@ DROP TABLE IF EXISTS users;
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS users (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    fingerprint     TEXT NOT NULL UNIQUE CHECK (trim(fingerprint) != ''),
-    ip              TEXT,
-    user_agent      TEXT,
-    device_type     TEXT,
-    os              TEXT,
-    creation_date   DATETIME DEFAULT CURRENT_TIMESTAMP
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    cognito_sub         TEXT,
+    cognito_username    TEXT,
+    fingerprint         TEXT NOT NULL UNIQUE CHECK (trim(fingerprint) != ''),
+    ip                  TEXT,
+    user_agent          TEXT,
+    device_type         TEXT,
+    os                  TEXT,
+    creation_date       DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS game_state (
@@ -21,3 +23,14 @@ CREATE TABLE IF NOT EXISTS game_state (
     PRIMARY KEY (user_id, date),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS login_streaks (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL,
+    login_date DATE NOT NULL DEFAULT (DATE('now', 'localtime')),
+    streak     INTEGER NOT NULL DEFAULT 1,
+    UNIQUE (user_id, login_date),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+-- CREATE INDEX IF NOT EXISTS idx_login_streaks_user_date
+-- ON login_streaks (user_id, login_date);

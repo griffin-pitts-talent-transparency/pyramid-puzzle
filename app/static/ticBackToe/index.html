@@ -6,21 +6,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>Pyramid Puzzle</title>
-    <meta name="description" content="Play Pyramid Puzzle - a daily multi-tier word puzzle. Solve 4-, 5-, 6-, and 7-letter words that share letters. A fast, strategic Wordle-style challenge updated daily at midnight EST.">
+    <title>Tic Back Toe</title>
+    <meta name="description" content="Play Tic Back Toe - A spin on traditional tic-tac-toe where only 3 moves remain on the board and your oldest move disappears.">
     <meta name="revisit-after" content="1 day">
 
     <!-- SEO Keywords -->
-    <meta name="keywords" content="Pyramid Puzzle, wordle variant, word game, puzzle game, word pyramid, brain teaser, wordle alternative">
+    <meta name="keywords" content="Tic Back Toe, vanishing tic-tac-toe, tic-tac-toe variant, disappearing moves game, tic tac toe challenge, board game, strategic puzzle">
 
     <!-- Author -->
     <meta name="author" content="talent-transparency.com">
 
     <!-- Open Graph  -->
-    <meta property="og:title" content="Pyramid Puzzle">
-    <meta property="og:description" content="A word-guessing game where you climb a pyramid of puzzles.">
+    <meta property="og:title" content="Tic Back Toe">
+    <meta property="og:description" content="View the Tic Back Toe. See daily and all-time stats, win rates, and top players for this vanishing move twist on tic-tac-toe.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://lebron-games.com/">
+    <meta property="og:url" content="https://lebron-games.com/ticBackToe">
     <meta property="og:locale" content="en_US">
     <meta property="og:image" content="https://lebron-games.com/img/pyramid_preview.jpg">
     <meta property="og:image:width" content="1200">
@@ -29,13 +29,13 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Pyramid Puzzle">
-    <meta name="twitter:description" content="A wordle-style game where you climb a pyramid of puzzles.">
+    <meta name="twitter:title" content="Tic Back Toe">
+    <meta name="twitter:description" content="The Tic-Back-Toe game.">
     <meta name="twitter:image" content="https://lebron-games.com/img/pyramid_preview.jpg">
 
     <!-- Adsense -->
     <meta name="google-adsense-account" content="ca-pub-4653173165411496">
-    
+
     <link rel="image_src" href="https://lebron-games.com/img/pyramid_preview.jpg">
 
     <!-- Manifest -->
@@ -56,40 +56,57 @@
         })();
     </script>
 </head>
-<body>
+<body>    
     <header class="site-header">
         <a href="#" class="menu-btn" aria-haspopup="true" aria-expanded="false">
             <span></span>
         </a>
-        <div id="userGreeting" class="hidden"></div>
+        <div id="userGreeting" class="user-greeting hidden"></div>
         <button id="signInButton" class="primary-cta instructions-button user-account-button hidden">Sign In</button>
         <button id="signOutButton" class="primary-cta instructions-button user-account-button hidden">Sign Out</button>
     </header>
+    
     <nav class="main-menu hidden">
         <ul>
-            <li>
-                <button id="openInstructions" class="primary-cta instructions-button">
-                    How To Play
-                </button>
-            </li>
             <li><a href="/">Pyramid Puzzle</a></li>
             <li><a href="/leaderboard/">Leaderboard</a></li>
             <li><a href="/ticBackToe/">Tic Back Toe</a></li>
         </ul>
     </nav>
 
-    <h1 class="hidden">Pyramid Puzzle - A Daily Word Game</h1>
-    <div id="game-container" class="game-screen"></div>
-    <noscript>Pyramid Puzzle cannot run without JavaScript.</noscript>
+    <h1 class="hidden">Tic Back Toe</h1>
+    <noscript>Tic Back Toe cannot run without JavaScript.</noscript>
     <section id="seo-content" class="hidden">
-        <h1>Pyramid Puzzle - A Daily Word Game</h1>
-        <p>Pyramid Puzzle is a daily word-guessing challenge. Solve a 4, 5, 6 and 7-letter word in sequence, each sharing letters.</p>
-        <p>Play once per day. Reset at midnight EST.</p>
-        <p>A strategic alternative to Wordle with multi-tier word puzzles.</p>
+        <h2>Tic Back Toe</h2>
+        <p>Play Tic Back Toe - a disappearing-move twist on the classic game of tic-tac-toe.</p>
+        <p>Outwit your opponent by planning ahead as your oldest moves vanish with each turn.</p>
     </section>
 
-    <script type="module" src="/js/loadPartials.js?v=2.0"></script>
-    <script type="module" src="/js/game.js?v=2.0"></script>
+    <div class="centered-text">
+        <p class="game-instructions">Tic-tac-toe with a twist: only your last three moves stay on the board - your oldest move disappears!</p>
+    </div>
+
+    <div class="floating-modal hidden">
+        <button id="playAgainButton" class="primary-cta">Play Again</button>
+    </div>
+
+    <div class="tic-back-toe-game-container">
+        <div class="tic-back-toe-grid">
+            <div class="tic-back-toe-cell"></div>
+            <div class="tic-back-toe-cell"></div>
+            <div class="tic-back-toe-cell"></div>
+            <div class="tic-back-toe-cell"></div>
+            <div class="tic-back-toe-cell"></div>
+            <div class="tic-back-toe-cell"></div>
+            <div class="tic-back-toe-cell"></div>
+            <div class="tic-back-toe-cell"></div>
+            <div class="tic-back-toe-cell"></div>
+          </div>
+    </div>
+    
+    <script type="module" src="/js/auth.js?v=2.0"></script>
+    <script type="module" src="/js/ticBackToe.js?v=2.0"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Menu toggle
@@ -112,11 +129,5 @@
             });
         });
     </script>
-    <!--
-    We use a word list heavily derived from the 12dicts word list
-    (version 6.0.2), created by Alan Beale and used under its
-    license terms. Projects like this would not be possible 
-    without his work. See: http://wordlist.aspell.net/12dicts/
-    -->
 </body>
 </html>

@@ -1,3 +1,4 @@
+-- update_game_state.sql
 UPDATE game_state
 SET state = json_set(
     state,
@@ -5,4 +6,4 @@ SET state = json_set(
     json(:guess)
 )
 WHERE user_id = (SELECT id FROM users WHERE fingerprint = :fingerprint)
-  AND date = :date;
+    AND date = :date;

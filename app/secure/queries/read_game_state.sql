@@ -1,8 +1,8 @@
 -- read_game_state.sql
-SELECT state
-FROM game_state
+SELECT gs.state
+FROM game_state gs
+JOIN users u ON u.id = gs.user_id
 WHERE (
-    (user_id = (SELECT id FROM users WHERE fingerprint = :fingerprint))
-    AND (date = :date)
+    (gs.date = :date)
+    AND (:fingerprint IS NOT NULL AND trim(:fingerprint) != '' AND u.fingerprint = :fingerprint)
 );
-    

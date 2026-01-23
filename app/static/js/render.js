@@ -150,7 +150,7 @@ function renderGuessCounter(remainingGuesses) {
     }
 }
 
-
+/*
 function colorKeyboardKeys(guessResult) {
     if (Array.isArray(guessResult)) {
         const keys = document.querySelectorAll('.keyboard .key');
@@ -183,6 +183,55 @@ function colorKeyboardKeys(guessResult) {
                 }
             }
         });
+    }
+}*/
+function colorKeyboardKeys(guessResult) {
+    if (!Array.isArray(guessResult)) return;
+
+    const keys = document.querySelectorAll('.keyboard .key');
+
+    // Priority order for promotion: match > present > miss
+    const statusPriority = {
+        'miss': 0,
+        'present': 1,
+        'match': 2
+    };
+
+    const bestStatusPerLetter = {};
+
+    // Determine best status for each letter in this guess
+    for (const { letter, status } of guessResult) {
+        const upper = letter.toUpperCase();
+        const current = bestStatusPerLetter[upper];
+        if (!current || statusPriority[status] > statusPriority[current]) {
+            bestStatusPerLetter[upper] = status;
+        }
+    }
+
+    // Apply best status to each keyboard key, promoting only
+    for (const key of keys) {
+        const keyLetter = key.textContent.toUpperCase();
+        const newStatus = bestStatusPerLetter[keyLetter];
+        if (!newStatus) continue;
+
+        const isMatch = key.classList.contains('match');
+        const isPresent = key.classList.contains('present');
+
+        if (newStatus === 'match') {
+            if (!isMatch) {
+                key.classList.remove('present', 'miss');
+                key.classList.add('match');
+            }
+        } else if (newStatus === 'present') {
+            if (!isMatch && !isPresent) {
+                key.classList.remove('miss');
+                key.classList.add('present');
+            }
+        } else if (newStatus === 'miss') {
+            if (!isMatch && !isPresent && !key.classList.contains('miss')) {
+                key.classList.add('miss');
+            }
+        }
     }
 }
 
@@ -335,6 +384,116 @@ function updateStatsGraphBar(idSolved, idUnsolved, solvedPctRaw) {
     }
 }
 
+async function updateAuthButtons(user) {
+    const signInButton = document.getElementById("signInButton");
+    const signOutButton = document.getElementById("signOutButton");
+    const userGreeting = document.getElementById("userGreeting");
+
+    if (user && !user.expired) {
+        signOutButton.classList.remove("hidden");
+        signInButton.classList.add("hidden");
+
+        // display username
+        const name = user.profile["cognito:username"] || user.profile.name || user.profile.email || "";
+        if (name && userGreeting) {
+            let loginStreakMessage = "";
+            if (typeof user.login_streak === "number") {
+                loginStreakMessage = " -- 🔥 Login streak: " + user.login_streak;
+            }
+
+            userGreeting.textContent = `Hello, ${name}${loginStreakMessage}`;
+            userGreeting.classList.remove("hidden");
+        }
+    } else {
+        signInButton.classList.remove("hidden");
+        signOutButton.classList.add("hidden");
+
+        // hide invalid username display
+        if (userGreeting) {
+            userGreeting.textContent = "Sign in to compete on the leaderboard and save your streak!";
+            userGreeting.classList.remove("hidden");
+            // userGreeting.classList.add("hidden");
+        }
+    }
+}
+
+function updateUserStreak(user) {
+    const userGreeting = document.getElementById("userGreeting");
+
+    if (userGreeting && typeof user.login_streak === "number" && user.login_streak > 0) {
+        const currentText = userGreeting.textContent;
+
+        const streakText = ` -- 🔥 ${user.login_streak} day login streak`;
+
+        if (!currentText.includes(streakText)) {
+            userGreeting.textContent = `${currentText}${streakText}`;
+        }
+    }
+}
+
+function renderSolvedWordsAllTime(data) {
+    const tbody = document.getElementById("solvedWordsTableBody");
+    if (tbody) {
+        tbody.innerHTML = "";
+
+        data.forEach((entry, index) => {
+            const row = document.createElement("tr");
+
+            const userCell = document.createElement("td");
+
+            let medal = "";
+            if (index === 0) medal = "🥇 ";
+            else if (index === 1) medal = "🥈 ";
+            else if (index === 2) medal = "🥉 ";
+
+            userCell.textContent = medal + (entry.cognito_username || "(anonymous)");
+
+            const countCell = document.createElement("td");
+            countCell.textContent = entry.total_solved;
+
+            row.appendChild(userCell);
+            row.appendChild(countCell);
+
+            tbody.appendChild(row);
+        });
+    }
+}
+
+function renderTotalGuessCount(count) {
+    const container = document.getElementById("totalGuessCount");
+    if (container) {
+        container.innerHTML = `Total Guesses Made by ALL Users: <span class="purple-text">${count.toLocaleString()}</span>`;
+        container.classList.remove("hidden");
+    }
+}
+
+function renderSolvedGamesAllTime(data) {
+    const tbody = document.getElementById("solvedGamesTableBody");
+    if (tbody) {
+        tbody.innerHTML = "";
+
+        data.forEach((entry, index) => {
+            const row = document.createElement("tr");
+
+            const userCell = document.createElement("td");
+
+            let medal = "";
+            if (index === 0) medal = "🥇 ";
+            else if (index === 1) medal = "🥈 ";
+            else if (index === 2) medal = "🥉 ";
+
+            userCell.textContent = medal + (entry.cognito_username || "(anonymous)");
+
+            const countCell = document.createElement("td");
+            countCell.textContent = entry.total_solved_games;
+
+            row.appendChild(userCell);
+            row.appendChild(countCell);
+
+            tbody.appendChild(row);
+        });
+    }
+}
 
 export { initializeInstructionsModal };
 export { renderActiveTiles };
@@ -348,3 +507,8 @@ export { showEndMessage };
 export { buildEmojiResultsFromDOM };
 export { showToast };
 export { updateStatsGraphBar };
+export { updateAuthButtons };
+export { updateUserStreak };
+export { renderSolvedWordsAllTime };
+export { renderTotalGuessCount };
+export { renderSolvedGamesAllTime };

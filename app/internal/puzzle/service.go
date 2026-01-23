@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"pyramid_puzzle/internal/secret"
@@ -21,11 +22,14 @@ type Service struct {
 	selectWord      *sql.Stmt
 	selectWordCount *sql.Stmt
 	// userDB statements
-	initializeGameState     *sql.Stmt
-	readGameState           *sql.Stmt
-	readIncorrectGuessCount *sql.Stmt
-	readSolvedTierStats     *sql.Stmt
-	updateGameState         *sql.Stmt
+	initializeGameState       *sql.Stmt
+	readGameState             *sql.Stmt
+	readIncorrectGuessCount   *sql.Stmt
+	readSolvedTierStats       *sql.Stmt
+	updateGameState           *sql.Stmt
+	readSolvedWordsAllTime    *sql.Stmt
+	readTotalGuessCount       *sql.Stmt
+	readTotalSolvedGamesCount *sql.Stmt
 }
 
 type WordResult struct {
@@ -41,6 +45,16 @@ type LetterResult struct {
 
 type GameState struct {
 	Guesses [][]LetterResult `json:"guesses"`
+}
+
+type SolvedWordsEntry struct {
+	CognitoUsername string `json:"cognito_username"`
+	TotalSolved     int    `json:"total_solved"`
+}
+
+type SolvedGamesEntry struct {
+	CognitoUsername  string `json:"cognito_username"`
+	TotalSolvedGames int    `json:"total_solved_games"`
 }
 
 /*
@@ -82,6 +96,18 @@ func NewService(puzzleDB *sql.DB, userDB *sql.DB) (*Service, error) {
 		return nil, err
 	}
 	s.initializeGameState, err = prepareSQL(userDB, "./secure/queries/initialize_game_state.sql")
+	if err != nil {
+		return nil, err
+	}
+	s.readSolvedWordsAllTime, err = prepareSQL(userDB, "./secure/queries/read_solved_words_all_time.sql")
+	if err != nil {
+		return nil, err
+	}
+	s.readTotalGuessCount, err = prepareSQL(userDB, "./secure/queries/read_total_guess_count.sql")
+	if err != nil {
+		return nil, err
+	}
+	s.readTotalSolvedGamesCount, err = prepareSQL(userDB, "./secure/queries/read_solved_games_all_time.sql")
 	if err != nil {
 		return nil, err
 	}
@@ -295,6 +321,54 @@ func (s *Service) HandleReadSolvedTierStats(w http.ResponseWriter, r *http.Reque
 	})
 }
 
+func (s *Service) HandleReadSolvedWordsAllTime(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	results, err := s.ReadSolvedWordsAllTime()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
+func (s *Service) HandleReadTotalGuessCount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	result, err := s.ReadTotalGuessCount()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+func (s *Service) HandleReadSolvedGamessAllTime(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	results, err := s.ReadSolvedGamesAllTime()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
 /*
 Endpoint connector logic
 */
@@ -498,6 +572,61 @@ func (s *Service) ReadSolvedTierStats(date string) (float64, float64, float64, f
 	}
 
 	return pct4, pct5, pct6, pct7, nil
+}
+
+func (s *Service) ReadSolvedWordsAllTime() ([]SolvedWordsEntry, error) {
+	rows, err := s.readSolvedWordsAllTime.Query()
+	if err != nil {
+		return nil, fmt.Errorf("ReadSolvedWordsAllTime query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var results []SolvedWordsEntry
+	for rows.Next() {
+		var entry SolvedWordsEntry
+		if err := rows.Scan(&entry.CognitoUsername, &entry.TotalSolved); err != nil {
+			return nil, fmt.Errorf("ReadSolvedWordsAllTime scan failed: %w", err)
+		}
+		results = append(results, entry)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ReadSolvedWordsAllTime row iteration failed: %w", err)
+	}
+
+	return results, nil
+}
+
+func (s *Service) ReadTotalGuessCount() (int64, error) {
+	var count int64
+	row := s.readTotalGuessCount.QueryRow()
+	if err := row.Scan(&count); err != nil {
+		return 0, fmt.Errorf("ReadTotalGuessCount scan failed: %w", err)
+	}
+	return count, nil
+}
+
+func (s *Service) ReadSolvedGamesAllTime() ([]SolvedGamesEntry, error) {
+	rows, err := s.readTotalSolvedGamesCount.Query()
+	if err != nil {
+		return nil, fmt.Errorf("ReadSolvedGamesAllTime query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var results []SolvedGamesEntry
+	for rows.Next() {
+		var entry SolvedGamesEntry
+		if err := rows.Scan(&entry.CognitoUsername, &entry.TotalSolvedGames); err != nil {
+			return nil, fmt.Errorf("ReadSolvedGamesAllTime scan failed: %w", err)
+		}
+		results = append(results, entry)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ReadSolvedGamesAllTime row iteration failed: %w", err)
+	}
+
+	return results, nil
 }
 
 /*
@@ -713,14 +842,16 @@ func computeGuessResult(guess string, answer string) []LetterResult {
 	return result
 }
 
-/*
 func (s *Service) PrintFullPuzzle() error {
 	lengths := []int{4, 5, 6, 7}
 	requiredShared := []int{0, 1, 2, 3}
 	tierLabels := []string{"", "five", "six", "seven"}
 
 	loc, _ := time.LoadLocation("America/New_York")
-	currentTime := time.Now().In(loc).Format("2006-01-02")
+	today := time.Now().In(loc)
+	tomorrow := today.AddDate(0, 0, 1)
+
+	currentTime := tomorrow.Format("2006-01-02")
 
 	puzzleKeyStr, err := secret.LoadPuzzleSecret()
 	if err != nil {
@@ -770,4 +901,3 @@ func (s *Service) PrintFullPuzzle() error {
 
 	return nil
 }
-*/
