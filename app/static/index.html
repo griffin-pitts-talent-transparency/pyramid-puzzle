@@ -61,7 +61,10 @@
         <a href="#" class="menu-btn" aria-haspopup="true" aria-expanded="false">
             <span></span>
         </a>
-        <div id="userGreeting" class="hidden"></div>
+        <div>
+            <div id="userGreeting" class="user-greeting hidden"></div>
+            <div id="puzzleResetTimer" class="reset-timer">Next puzzle in: --:--:--</div>
+        </div>
         <button id="signInButton" class="primary-cta instructions-button user-account-button hidden">Sign In</button>
         <button id="signOutButton" class="primary-cta instructions-button user-account-button hidden">Sign Out</button>
     </header>
@@ -73,6 +76,7 @@
                 </button>
             </li>
             <li><a href="/">Pyramid Puzzle</a></li>
+            <!-- <li><a href="/wordChain/">Word Chain</a></li> -->
             <li><a href="/leaderboard/">Leaderboard</a></li>
             <li><a href="/ticBackToe/">Tic Back Toe</a></li>
         </ul>

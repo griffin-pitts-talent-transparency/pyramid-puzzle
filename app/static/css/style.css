@@ -74,6 +74,12 @@ html, body {
 .user-greeting {
 }
 
+.reset-timer {
+    min-width: 14ch;
+    white-space: nowrap;
+}
+
+
 /*
     Hamburger button
 */
@@ -287,6 +293,7 @@ html, body {
     background: var(--true-white);
 
     box-sizing: border-box;
+    overflow-x: hidden;
     overflow-y: auto;
 }
 
@@ -334,6 +341,10 @@ html, body {
     display: none;
 }
 
+
+/********************************************************************************/
+/* Keyboard                                                                     */
+/********************************************************************************/
 .keyboard {
     border-top: 1px solid var(--vibrant-purple);
     padding-top: 16px;
@@ -461,6 +472,115 @@ html, body {
 	color: white;
 }
 
+@keyframes flip {
+    0% {
+        transform: rotateX(0deg);
+    }
+    50% {
+        transform: rotateX(90deg);
+        background-color: var(--true-white);
+        color: transparent;
+    }
+    100% {
+        transform: rotateX(0deg);
+    }
+}
+
+.tile.flip {
+    animation: flip 400ms ease-in-out forwards;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+}
+
+@keyframes pop {
+    0% {
+        transform: scale(1);
+        filter: brightness(1) drop-shadow(0 0 0px var(--vibrant-purple));
+    }
+    30% {
+        transform: scale(1.2);
+        filter: brightness(1.3) drop-shadow(0 0 8px var(--vibrant-purple));
+    }
+    60% {
+        transform: scale(0.95);
+        filter: brightness(1.1) drop-shadow(0 0 4px var(--vibrant-purple));
+    }
+    100% {
+        transform: scale(1);
+        filter: brightness(1) drop-shadow(0 0 0px var(--vibrant-purple));
+    }
+}
+
+.tile.pop {
+    animation: pop 350ms ease-out;
+}
+
+@keyframes shine-wipe {
+    0% {
+        background-position: -120% 0%;
+    }
+    100% {
+        background-position: 120% 0%;
+    }
+}
+
+.tile.wipe {
+    background-image: linear-gradient(
+        300deg,
+        transparent 45%,
+        rgba(255, 255, 255, 0.45) 50%,
+        transparent 55%
+    );
+    background-size: 300% 100%;
+    background-repeat: no-repeat;
+    animation: shine-wipe 350ms ease-out;
+}
+
+@keyframes fire-ring {
+    0% {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+    40% {
+        opacity: 1;
+        transform: scale(1.15);
+    }
+    70% {
+        opacity: 0.9;
+        transform: scale(1.05);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1);
+    }
+}
+
+.row.fireburst {
+    position: relative;
+    z-index: 10;
+    isolation: isolate;
+}
+
+.row.fireburst::before {
+    content: "";
+    position: absolute;
+    inset: -70px;
+    pointer-events: none;
+    z-index: -1;
+
+    background: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        transparent 45%,
+        rgba(255, 140, 40, 0.9) 55%,
+        rgba(255, 90, 0, 0.8) 65%,
+        rgba(255, 40, 0, 0.6) 72%,
+        transparent 85%
+    );
+
+    filter: blur(28px);
+    animation: fire-ring 900ms ease-out;
+}
 
 @keyframes pulse {
     0% { transform: scale(1); opacity: 1; }
@@ -973,8 +1093,110 @@ Solved words all-time leaderboard
 }
 
 /********************************************************************************/
+/* Word chain game                                                              */
+/********************************************************************************/
+.word-chain-game-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* height: min(85vw, 85vh); */
+    height: 85vh;
+    padding-bottom: 2px;
+}
+
+.word-chain-game-layout .word-chain-game-container {
+    flex: 1;
+    /* min-height: 0; */
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* .word-chain-game-layout .keyboard {
+    position: sticky;
+    bottom: 0;
+    flex-shrink: 0;
+    background-color: var(--true-white);
+} */
+
+.word-chain-game-container {
+    display: flex;
+    flex-direction: column;
+    min-width: 35vw;
+}
+
+.word-chain-word {
+    display: flex;
+}
+
+.word-chain-tile {
+    width: 48px;
+    height: 48px;
+    color: var(--true-black);
+    box-sizing: border-box;
+    font-size: 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.word-chain-tile:empty {
+    width: 40px;
+    height: 44px;
+    margin: 4px;
+    margin-top: 0;
+    border-bottom: 4px solid black;
+    background-color: rgb(240, 239, 239);
+}
+
+.word-chain-hint-letter {
+    color: var(--present-orange)
+}
+
+.word-chain-solved-letter {
+    color: var(--vibrant-purple);
+}
+
+.word-chain-word.word-chain-current-word .word-chain-tile {
+    /* color: var(--vibrant-purple); */
+}
+
+.word-chain-word.word-chain-correct-word .word-chain-tile {
+    color: var(--true-white);
+    background-color: var(--vibrant-purple);
+}
+
+@media screen and (max-width: 420px) {
+    .word-chain-tile {
+        width: 42px;
+        height: 42px;
+        font-size: 18px;
+    }
+}
+
+/********************************************************************************/
 /* global (must come last)                                                      */
 /********************************************************************************/
+.auth-gate {
+    background: rgba(0, 0, 0, 0.75);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.auth-gate-card {
+    background-color: var(--true-white);
+    padding: 24px 28px;
+    border-radius: 8px;
+    max-width: 420px;
+    text-align: center;
+    margin-top: 60px;
+    margin-bottom: 60px;
+}
+
 .hidden {
     display: none;
 }

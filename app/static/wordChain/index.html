@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Primary Meta -->
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Word Chain</title>
+    <meta name="description" content="Play Word Chain - A daily game where you must guess several words in a row in as few tries as possible, where each subsequent word is thematically 'linked' to the previous word.">
+    <meta name="revisit-after" content="1 day">
+
+    <!-- SEO Keywords -->
+    <meta name="keywords" content="Word Chain, daily word game, word puzzle, chain word game, guess the word, word linking game, brain game, puzzle of the day, word connection game, vocabulary challenge, themed word game, word guessing game, word chain puzzle">
+
+    <!-- Author -->
+    <meta name="author" content="talent-transparency.com">
+
+    <!-- Open Graph  -->
+    <meta property="og:title" content="Word Chain">
+    <meta property="og:description" content="Guess 10 linked words in a row with as few mistakes as possible. Each word connects to the next. Can you complete the chain? Play the daily Word Chain challenge now.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lebron-games.com/wordChain">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:image" content="https://lebron-games.com/img/pyramid_preview.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/jpeg">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Word Chain">
+    <meta name="twitter:description" content="The Word Chain Game.">
+    <meta name="twitter:image" content="https://lebron-games.com/img/pyramid_preview.jpg">
+
+    <!-- Adsense -->
+    <meta name="google-adsense-account" content="ca-pub-4653173165411496">
+
+    <link rel="image_src" href="https://lebron-games.com/img/pyramid_preview.jpg">
+
+    <!-- Manifest -->
+    <link rel="manifest" href="/site.webmanifest?v=2.0">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/style.css?v=2.0">
+    <script>
+        (function () {
+            const htmlVersion = 'v2.0';
+            try {
+                if (localStorage.getItem('htmlVersion') !== htmlVersion) {
+                    localStorage.setItem('htmlVersion', htmlVersion);
+                    location.reload(true);
+                }
+            } catch (e) {
+            }
+        })();
+    </script>
+</head>
+<body>    
+    <header class="site-header">
+        <a href="#" class="menu-btn" aria-haspopup="true" aria-expanded="false">
+            <span></span>
+        </a>
+        <div id="userGreeting" class="user-greeting hidden"></div>
+        <button id="signInButton" class="primary-cta instructions-button user-account-button hidden">Sign In</button>
+        <button id="signOutButton" class="primary-cta instructions-button user-account-button hidden">Sign Out</button>
+    </header>
+    
+    <nav class="main-menu hidden">
+        <ul>
+            <li><a href="/">Pyramid Puzzle</a></li>
+            <!-- <li><a href="/wordChain/">Word Chain</a></li> -->
+            <li><a href="/leaderboard/">Leaderboard</a></li>
+            <li><a href="/ticBackToe/">Tic Back Toe</a></li>
+        </ul>
+    </nav>
+
+    <h1 class="hidden">Word Chain</h1>
+    <noscript>Word Chain cannot run without JavaScript.</noscript>
+    <section id="seo-content" class="hidden">
+        <h2>Word Chain</h2>
+        <p>Play Word Chain - a word guessing game where the player must guess a series of words each thematically linked to the next.</p>
+    </section>
+
+    <div class="word-chain-game-layout">
+        <div class="centered-text">
+            <p class="game-instructions">
+                Guess each word in the fewest attempts possible. Each word is linked to the next, like "fire -> station." Failing a guess will increment the counter and give you a letter!
+            </p>
+        </div>
+        <div id="wordChainGameContainer" class="word-chain-game-container">
+            <div id="word-0" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-1" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-2" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-3" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-4" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-5" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-6" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-7" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-8" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-9" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+            <div id="word-10" class="word-chain-word">
+                <div class="word-chain-tile"></div>
+            </div>
+        </div>
+
+        <div id="authGate" class="auth-gate hidden">
+            <div class="auth-gate-card">
+                <h2>Sign in to play</h2>
+                <p>This game requires an account to track progress and prevent abuse.</p>
+                <button id="authGateLoginButton" class="primary-cta instructions-button">Sign In</button>
+            </div>
+        </div>
+
+        <div class="keyboard">
+            <div class="key-row">
+                <button class="key">Q</button>
+                <button class="key">W</button>
+                <button class="key">E</button>
+                <button class="key">R</button>
+                <button class="key">T</button>
+                <button class="key">Y</button>
+                <button class="key">U</button>
+                <button class="key">I</button>
+                <button class="key">O</button>
+                <button class="key">P</button>
+            </div>
+            <div class="key-row">
+                <button class="key">A</button>
+                <button class="key">S</button>
+                <button class="key">D</button>
+                <button class="key">F</button>
+                <button class="key">G</button>
+                <button class="key">H</button>
+                <button class="key">J</button>
+                <button class="key">K</button>
+                <button class="key">L</button>
+            </div>
+            <div class="key-row">
+                <button class="key enter">ENTER</button>
+                <button class="key">Z</button>
+                <button class="key">X</button>
+                <button class="key">C</button>
+                <button class="key">V</button>
+                <button class="key">B</button>
+                <button class="key">N</button>
+                <button class="key">M</button>
+                <button class="key backspace">⌫</button>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="/js/wordChain.js?v=2.0"></script>
+    <!-- <script type="module" src="/js/auth.js?v=2.0"></script> -->
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Menu toggle
+            const btn = document.querySelector('.menu-btn');
+            const menu = document.querySelector('.main-menu');
+            if (btn && menu) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    this.classList.toggle('is-open');
+                    menu.classList.toggle('hidden');
+                });
+            }
+        
+            // Highlight selected menu item
+            const path = window.location.pathname;
+            document.querySelectorAll('.main-menu ul li a').forEach(link => {
+                if (link.pathname === path) {
+                    link.classList.add('selected');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

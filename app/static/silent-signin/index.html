@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Silent Sign-In</title>
+</head>
+<body>
+  <script type="module">
+    import {
+      UserManager
+    } from '/js/vendor/oidc-client-ts.js';
+
+    // Create a barebones UserManager instance (config doesn’t need to match main app)
+    const um = new UserManager({});
+    um.signinSilentCallback().catch((err) => {
+      console.error("Silent signin callback failed:", err);
+    });
+  </script>
+</body>
+</html>

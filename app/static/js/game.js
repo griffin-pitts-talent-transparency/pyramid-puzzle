@@ -49,7 +49,7 @@ async function initializeGameSession() {
                 let isCorrect = true;
                 if (guessResult && Array.isArray(guessResult)) {
                     count = guessResult.length;
-                    renderGuessResult(guessResult);
+                    renderGuessResult(guessResult, false);
             
                     isCorrect = isGuessCorrect(guessResult);
                 } else {
@@ -132,7 +132,7 @@ async function handleGuess(submittedGuess) {
             const guessResult = data.guessResult;
 
             colorKeyboardKeys(guessResult);
-            renderGuessResult(guessResult);
+            renderGuessResult(guessResult, true);
             renderGuessCounter(data.remainingGuesses);
             
             if(data.remainingGuesses > 0) {
@@ -306,6 +306,61 @@ function initializeShareToggle() {
     });
 }
 
+function getNYOffsetHours() {
+    // Get current time in UTC and NY
+    const now = new Date();
+
+    // Get offset from UTC in minutes for New York
+    const nyOffsetMinutes = new Date(now.toLocaleString("en-US", {
+        timeZone: "America/New_York"
+    })).getTimezoneOffset();
+
+    // Convert minutes to hours
+    return -nyOffsetMinutes / 60;
+}
+
+function getNextMidnightNY() {
+    const nowUTC = new Date();
+    const NY_OFFSET_HOURS = getNYOffsetHours();
+
+    const localOffsetMs = NY_OFFSET_HOURS * 60 * 60 * 1000;
+    const nyNow = new Date(nowUTC.getTime() + localOffsetMs);
+
+    const nyMidnight = new Date(nyNow);
+    nyMidnight.setUTCHours(0, 0, 0, 0);
+    nyMidnight.setUTCDate(nyNow.getUTCDate() + 1);
+
+    const nyMidnightUTC = new Date(nyMidnight.getTime() - localOffsetMs);
+
+    return nyMidnightUTC;
+}
+
+function startCountdownTimer() {
+    const updateCountdown = () => {
+        const now = new Date();
+        const nextReset = getNextMidnightNY();
+        const diff = nextReset - now;
+
+        const el = document.getElementById("puzzleResetTimer");
+        if (!el) return;
+
+        if (diff <= 0) {
+            el.textContent = "New puzzle available!";
+            return;
+        }
+
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+
+        el.textContent = `Next puzzle in: ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    };
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+}
+
+
 /*
     main
 */
@@ -313,6 +368,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     await loadPartial('game-container', '/partials/game.html');
     
     // Initialization
+    startCountdownTimer();
     await initializeGameSession();
     initializeInstructionsModal();
     initializeKeyboard();

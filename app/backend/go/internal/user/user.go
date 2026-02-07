@@ -1,67 +1,18 @@
-package main
+package user
 
 import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"lebron-games/internal/db"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
-	"pyramid_puzzle/internal/db"
-	"pyramid_puzzle/internal/puzzle"
-
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 )
 
-type WordResult struct {
-	Word       string `json:"word"`
-	Length     int    `json:"length"`
-	LetterMask int64  `json:"letter_mask"`
-}
-
-func main() {
-	godotenv.Load(".env")
-
-	puzzleDB, err := db.OpenSQLite("./data/pyramid_puzzle.db")
-	if err != nil {
-		log.Fatalf("❌ Failed to open SQLite DB: %v", err)
-	}
-
-	userDB, err := db.OpenSQLite("./secure/data/userdata.db")
-	if err != nil {
-		log.Fatalf("❌ Failed to open SQLite DB: %v", err)
-	}
-
-	svc, err := puzzle.NewService(puzzleDB, userDB)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	http.HandleFunc("/api/v1.0/validate-guess", svc.HandleValidateGuessEndpoint)
-	http.HandleFunc("/api/v1.0/get-solved-tier-stats", svc.HandleReadSolvedTierStats)
-	http.HandleFunc("/api/v1.0/get-today-remaining-guesses", svc.HandleGetTodayRemainingGuessesEndpoint)
-	http.HandleFunc("/api/v1.0/load-today-game", svc.HandleLoadTodayGameEndpoint)
-	http.HandleFunc("/api/v1.0/get-next-word-hint", svc.HandleGetNextWordHint)
-	http.HandleFunc("/api/v1.0/get-user", handleUser)
-	http.HandleFunc("/api/v1.0/reveal-next-word", svc.HandleRevealNextWord)
-	http.HandleFunc("/api/v1.0/read-solved-words-all-time", svc.HandleReadSolvedWordsAllTime)
-	http.HandleFunc("/api/v1.0/read-total-guess-count", svc.HandleReadTotalGuessCount)
-	// HandleReadSolvedGamessAllTime
-	http.HandleFunc("/api/v1.0/read-solved-games-all-time", svc.HandleReadSolvedGamessAllTime)
-
-	err = svc.PrintFullPuzzle()
-	if err != nil {
-		log.Fatalf("❌ Failed to print puzzle: %v", err)
-	}
-
-	log.Println("🚀 Running server on :5000")
-	log.Fatal(http.ListenAndServe(":5000", nil))
-}
-
-func handleUser(w http.ResponseWriter, r *http.Request) {
+func HandleUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		log.Println("⛔ Invalid method:", r.Method)
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -82,44 +33,44 @@ func handleUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userDB, err := db.OpenSQLite("./secure/data/userdata.db")
+	userDB, err := db.OpenSQLiteDBByName("userdata")
 	if err != nil {
 		log.Fatalf("❌ Failed to open SQLite DB: %v", err)
 	}
 	defer userDB.Close()
 
-	readFingerprintUserStmt, err := prepareSQLStmt(userDB, "./secure/queries/read_user_by_fingerprint.sql")
+	readFingerprintUserStmt, err := db.PrepareSQLStatementByName(userDB, "read_user_by_fingerprint.sql", "userdata")
 	if err != nil {
 		return
 	}
 	defer readFingerprintUserStmt.Close()
 
-	readSubUserStmt, err := prepareSQLStmt(userDB, "./secure/queries/read_user_by_sub.sql")
+	readSubUserStmt, err := db.PrepareSQLStatementByName(userDB, "read_user_by_sub.sql", "userdata")
 	if err != nil {
 		return
 	}
 	defer readSubUserStmt.Close()
 
-	updateStmt, err := prepareSQLStmt(userDB, "./secure/queries/update_user.sql")
+	updateStmt, err := db.PrepareSQLStatementByName(userDB, "update_user.sql", "userdata")
 	if err != nil {
 		http.Error(w, "Server error", http.StatusInternalServerError)
 		return
 	}
 	defer updateStmt.Close()
 
-	insertStmt, err := prepareSQLStmt(userDB, "./secure/queries/insert_user.sql")
+	insertStmt, err := db.PrepareSQLStatementByName(userDB, "insert_user.sql", "userdata")
 	if err != nil {
 		return
 	}
 	defer insertStmt.Close()
 
-	insertLoginStreakStmt, err := prepareSQLStmt(userDB, "./secure/queries/insert_login_streak.sql")
+	insertLoginStreakStmt, err := db.PrepareSQLStatementByName(userDB, "insert_login_streak.sql", "userdata")
 	if err != nil {
 		return
 	}
 	defer insertLoginStreakStmt.Close()
 
-	readLoginStreakStmt, err := prepareSQLStmt(userDB, "./secure/queries/read_login_streak.sql")
+	readLoginStreakStmt, err := db.PrepareSQLStatementByName(userDB, "read_login_streak.sql", "userdata")
 	if err != nil {
 		return
 	}
@@ -298,18 +249,4 @@ func nullIfEmpty(s string) interface{} {
 		return nil
 	}
 	return s
-}
-
-func prepareSQLStmt(db *sql.DB, path string) (*sql.Stmt, error) {
-	sqlBytes, err := os.ReadFile(path)
-	if err != nil {
-		log.Printf("❌ Failed to read %s: %v\n", path, err)
-		return nil, err
-	}
-	stmt, err := db.Prepare(string(sqlBytes))
-	if err != nil {
-		log.Printf("❌ Failed to prepare SQL from %s: %v\n", path, err)
-		return nil, err
-	}
-	return stmt, nil
 }

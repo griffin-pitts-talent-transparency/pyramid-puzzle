@@ -61,7 +61,7 @@ function setActiveRow() {
     }
 }
 
-function renderGuessResult(guessResult) {
+function renderGuessResult(guessResult, shouldAnimate = false) {
     // Support either [{letter,status}, ...] or { letters: [...] }
     let letters = null;
 
@@ -94,21 +94,76 @@ function renderGuessResult(guessResult) {
                 const letterObj = letters[k];
                 const tile = tiles[k];
 
+                tile.classList.remove('match', 'present', 'miss');
                 tile.textContent = letterObj.letter;
 
-                tile.classList.remove('match', 'present', 'miss');
+                if(shouldAnimate) {
+                    setTimeout(() => {
+                            tile.classList.add('flip');
+                        setTimeout(() => {
+                            // Apply the status after the flip halfway point
+                            tile.classList.remove('match', 'present', 'miss');
+                            if (letterObj.status === 'match') {
+                                tile.classList.add('match');
+                            } else if (letterObj.status === 'present') {
+                                tile.classList.add('present');
+                            } else {
+                                tile.classList.add('miss');
+                            }
+                        }, 200);
 
-                if (letterObj.status === 'match') {
-                    tile.classList.add('match');
-                } else if (letterObj.status === 'present') {
-                    tile.classList.add('present');
-                } else if (letterObj.status === 'miss') {
-                    tile.classList.add('miss');
+                        setTimeout(() => {
+                            tile.classList.remove('flip');
+                        }, 400);
+                
+                    }, k * 150);
+                } else {
+                    if (letterObj.status === 'match') {
+                        tile.classList.add('match');
+                    } else if (letterObj.status === 'present') {
+                        tile.classList.add('present');
+                    } else if (letterObj.status === 'miss') {
+                        tile.classList.add('miss');
+                    }
                 }
             }
 
-            // Mark this row as filled so it won't be reused
             targetRow.classList.add('guess-filled');
+
+            if (shouldAnimate) {
+                const totalDelay = (letters.length - 1) * 150 + 400;
+            
+                setTimeout(() => {
+                    let isPerfectWord = true;
+                
+                    for (let k = 0; k < letters.length; k++) {
+                        const letterObj = letters[k];
+                        const tile = tiles[k];
+                
+                        if (letterObj.status === 'match') {
+                            tile.classList.add('pop');
+                            setTimeout(() => tile.classList.remove('pop'), 250);
+                        } else {
+                            isPerfectWord = false;
+                
+                            if (letterObj.status === 'present') {
+                                tile.classList.add('wipe');
+                                setTimeout(() => {
+                                    tile.classList.remove('wipe');
+                                }, 600);
+                            }
+                        }
+                    }
+                
+                    if (isPerfectWord && letters.length !== 7) {
+                        targetRow.classList.add('fireburst');
+                        setTimeout(() => {
+                            targetRow.classList.remove('fireburst');
+                        }, 800);
+                    }
+                }, totalDelay);
+                
+            }
         }
     }
 }

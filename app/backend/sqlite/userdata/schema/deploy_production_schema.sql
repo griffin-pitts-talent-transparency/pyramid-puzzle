@@ -1,6 +1,6 @@
 -- deploy_production_schema.sql
-DROP TABLE IF EXISTS game_state;
-DROP TABLE IF EXISTS users;
+-- DROP TABLE IF EXISTS game_state;
+-- DROP TABLE IF EXISTS users;
 
 PRAGMA foreign_keys = ON;
 
@@ -34,3 +34,11 @@ CREATE TABLE IF NOT EXISTS login_streaks (
 );
 -- CREATE INDEX IF NOT EXISTS idx_login_streaks_user_date
 -- ON login_streaks (user_id, login_date);
+
+CREATE TABLE IF NOT EXISTS word_chain_game_state (
+    user_id      INTEGER NOT NULL,
+    puzzle_date  DATE NOT NULL,
+    guesses      TEXT NOT NULL, -- JSON array of {"word": string, "result": boolean}
+    PRIMARY KEY (user_id, puzzle_date),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

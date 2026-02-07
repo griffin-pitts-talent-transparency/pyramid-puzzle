@@ -7,10 +7,12 @@ import {
 import { updateAuthButtons } from './render.js';
 
 const redirectUri = window.location.origin + "/";
+
 const cognitoAuthConfig = {
     authority: "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_iclUrXbex",
     client_id: "5i5gonu79adh8o7rstbdd2ajdd",
     redirect_uri: redirectUri, // "https://localhost:8080/" // "https://lebron-games.com/",
+    silent_redirect_uri: window.location.origin + "/silent-signin.html",
     response_type: "code",
     scope: "openid email phone"
 };
@@ -23,7 +25,11 @@ const userManager = new UserManager({
 });
 
 async function signInRedirect() {
-    await userManager.signinRedirect();
+    try {
+        await userManager.signinRedirect();
+    } catch (err) {
+        console.error("signinRedirect failed:", err);
+    }
 }
 
 async function signOutRedirect() {
@@ -48,10 +54,14 @@ async function getUserAsync() {
             const hasState = url.searchParams.has("state");
             let user = null;
 
+            // Handle redirect callback (if coming back from AWS login)
             if (hasAuthCode && hasState) {
                 try {
                     user = await userManager.signinCallback();
-                    window.history.replaceState({}, document.title, window.location.pathname);
+                    const redirectUrl = sessionStorage.getItem("post_signin_redirect") || "/";
+                    sessionStorage.removeItem("post_signin_redirect");
+                    window.location.replace(redirectUrl);
+                    return null; // execution stops due to navigation
                 } catch (err) {
                     console.warn("signinCallback failed:", err);
                 }
@@ -61,8 +71,9 @@ async function getUserAsync() {
                 if (user && user.expired) {
                     try {
                         user = await userManager.signinSilent();
+                        console.info("Silent signin successful");
                     } catch (err) {
-                        console.warn("signinSilent failed:", err);
+                        console.warn("Silent signin failed:", err);
                         await userManager.removeUser();
                         user = null;
                     }
@@ -78,7 +89,7 @@ async function getUserAsync() {
     const result = await userPromise;
     pendingUserPromise = null;
 
-    updateAuthButtons(result); 
+    updateAuthButtons(result);
     return result;
 }
 
@@ -89,41 +100,21 @@ async function getUserAsync() {
 document.addEventListener("DOMContentLoaded", async () => {
     const signInButton = document.getElementById("signInButton");
     if (signInButton) {
-        signInButton.addEventListener("click", async () => {
-            await signInRedirect();
+        signInButton.addEventListener("click", () => {
+            sessionStorage.setItem(
+                "post_signin_redirect",
+                window.location.href
+            );
+            window.location.href = "/signin";
         });
     }
-
     const signOutButton = document.getElementById("signOutButton");
     if (signOutButton) {
         signOutButton.addEventListener("click", async () => {
             await signOutRedirect();
         });
     }
-
-    const forceSignOutButton = document.getElementById("forceSignOutButton");
-    if (forceSignOutButton) {
-        forceSignOutButton.addEventListener("click", async () => {
-            await signOutRedirect();
-        });
-    }
-
-    const clearStorageButton = document.getElementById("clearStorageButton");
-    if (clearStorageButton) {
-        clearStorageButton.addEventListener("click", async () => {
-            // clear oidc cookies
-            for (let key in localStorage) {
-                if (key.includes("oidc")) {
-                    localStorage.removeItem(key);
-                }
-            }
-            for (let key in sessionStorage) {
-                if (key.includes("oidc")) {
-                    sessionStorage.removeItem(key);
-                }
-            }
-        });
-    }
 });
 
 export { getUserAsync };
+export { signInRedirect };

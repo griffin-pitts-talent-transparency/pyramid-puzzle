@@ -1,12 +1,13 @@
+# local_run.sh
 #!/bin/bash
 set -e
 
-# Path to Go API binary
-GO_BINARY=./cmd/server/server
+# Path to Go API binary (relative to /app)
+GO_BINARY=./backend/go/cmd/server/server
 
-# Rebuild Go API (optional: only needed if you want auto-rebuild)
+# Rebuild Go API
 echo "🔨 Building Go API..."
-go build -o "$GO_BINARY" ./cmd/server
+(cd backend/go && go build -o ./cmd/server/server ./cmd/server)
 
 # Start Go server in background
 echo "🚀 Starting Go API..."

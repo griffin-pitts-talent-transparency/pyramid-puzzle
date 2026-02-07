@@ -6,18 +6,23 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"pyramid_puzzle/internal/secret"
-	"pyramid_puzzle/internal/seed"
 	"strings"
 	"time"
+
+	"lebron-games/internal/secret"
+
+	"lebron-games/internal/db"
+	"lebron-games/internal/seed"
 )
 
 type Service struct {
-	puzzleDB    *sql.DB
-	userDB      *sql.DB
-	puzzleWords []string // 4,5,6,7 letter words for today
-	puzzleDate  string   // "YYYY-MM-DD"
+	puzzleDB      *sql.DB
+	userDB        *sql.DB
+	wordChainDB   *sql.DB
+	puzzleWords   []string // 4,5,6,7 letter words for today
+	puzzleDate    string   // "YYYY-MM-DD"
+	WordChain     []string
+	WordChainDate string // "YYYY-MM-DD"
 	// puzzleDB statements
 	selectWord      *sql.Stmt
 	selectWordCount *sql.Stmt
@@ -30,6 +35,8 @@ type Service struct {
 	readSolvedWordsAllTime    *sql.Stmt
 	readTotalGuessCount       *sql.Stmt
 	readTotalSolvedGamesCount *sql.Stmt
+	// wordChainDB statements
+	readWordChain *sql.Stmt
 }
 
 type WordResult struct {
@@ -57,57 +64,69 @@ type SolvedGamesEntry struct {
 	TotalSolvedGames int    `json:"total_solved_games"`
 }
 
+type WordChainGuess struct {
+	Guess    string `json:"guess"`
+	Position int    `json:"position"`
+}
+
 /*
 Service struct constructor
 */
-func NewService(puzzleDB *sql.DB, userDB *sql.DB) (*Service, error) {
+func NewService(puzzleDB *sql.DB, userDB *sql.DB, wordChainDB *sql.DB) (*Service, error) {
 	s := &Service{
-		puzzleDB: puzzleDB,
-		userDB:   userDB,
+		puzzleDB:    puzzleDB,
+		userDB:      userDB,
+		wordChainDB: wordChainDB,
 	}
 
 	var err error
 
 	// puzzleDB
-	s.selectWord, err = prepareSQL(puzzleDB, "./data/select_word.sql")
+	s.selectWord, err = db.PrepareSQLStatementByName(puzzleDB, "select_word.sql", "pyramid_puzzle")
 	if err != nil {
 		return nil, err
 	}
-	s.selectWordCount, err = prepareSQL(puzzleDB, "./data/select_word_count.sql")
+	s.selectWordCount, err = db.PrepareSQLStatementByName(puzzleDB, "select_word_count.sql", "pyramid_puzzle")
 	if err != nil {
 		return nil, err
 	}
 
 	// userDB
-	s.readGameState, err = prepareSQL(userDB, "./secure/queries/read_game_state.sql")
+	s.readGameState, err = db.PrepareSQLStatementByName(userDB, "read_game_state.sql", "userdata")
 	if err != nil {
 		return nil, err
 	}
-	s.readIncorrectGuessCount, err = prepareSQL(userDB, "./secure/queries/read_incorrect_guess_count.sql")
+	s.readIncorrectGuessCount, err = db.PrepareSQLStatementByName(userDB, "read_incorrect_guess_count.sql", "userdata")
 	if err != nil {
 		return nil, err
 	}
-	s.readSolvedTierStats, err = prepareSQL(userDB, "./secure/queries/read_solved_tier_stats.sql")
+	s.readSolvedTierStats, err = db.PrepareSQLStatementByName(userDB, "read_solved_tier_stats.sql", "userdata")
 	if err != nil {
 		return nil, err
 	}
-	s.updateGameState, err = prepareSQL(userDB, "./secure/queries/update_game_state.sql")
+	s.updateGameState, err = db.PrepareSQLStatementByName(userDB, "update_game_state.sql", "userdata")
 	if err != nil {
 		return nil, err
 	}
-	s.initializeGameState, err = prepareSQL(userDB, "./secure/queries/initialize_game_state.sql")
+	s.initializeGameState, err = db.PrepareSQLStatementByName(userDB, "initialize_game_state.sql", "userdata")
 	if err != nil {
 		return nil, err
 	}
-	s.readSolvedWordsAllTime, err = prepareSQL(userDB, "./secure/queries/read_solved_words_all_time.sql")
+	s.readSolvedWordsAllTime, err = db.PrepareSQLStatementByName(userDB, "read_solved_words_all_time.sql", "userdata")
 	if err != nil {
 		return nil, err
 	}
-	s.readTotalGuessCount, err = prepareSQL(userDB, "./secure/queries/read_total_guess_count.sql")
+	s.readTotalGuessCount, err = db.PrepareSQLStatementByName(userDB, "read_total_guess_count.sql", "userdata")
 	if err != nil {
 		return nil, err
 	}
-	s.readTotalSolvedGamesCount, err = prepareSQL(userDB, "./secure/queries/read_solved_games_all_time.sql")
+	s.readTotalSolvedGamesCount, err = db.PrepareSQLStatementByName(userDB, "read_solved_games_all_time.sql", "userdata")
+	if err != nil {
+		return nil, err
+	}
+
+	// wordChainDB
+	s.readWordChain, err = db.PrepareSQLStatementByName(wordChainDB, "read_word_chain.sql", "word_chain")
 	if err != nil {
 		return nil, err
 	}
@@ -629,6 +648,21 @@ func (s *Service) ReadSolvedGamesAllTime() ([]SolvedGamesEntry, error) {
 	return results, nil
 }
 
+func (s *Service) ComputeWordChainGuessResult(input WordChainGuess) (bool, error) {
+	var result bool
+	var err error
+
+	if s.WordChain == nil || len(s.WordChain) != 11 {
+		err = fmt.Errorf("word chain not loaded")
+	} else if input.Position < 1 || input.Position >= len(s.WordChain) {
+		err = fmt.Errorf("invalid position: %d", input.Position)
+	} else {
+		result = strings.EqualFold(input.Guess, s.WordChain[input.Position])
+	}
+
+	return result, err
+}
+
 /*
 Helpers
 */
@@ -763,18 +797,6 @@ func (s *Service) BuildCurrentPuzzle() error {
 	return nil
 }
 
-func prepareSQL(db *sql.DB, path string) (*sql.Stmt, error) {
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", path, err)
-	}
-	stmt, err := db.Prepare(string(bytes))
-	if err != nil {
-		return nil, fmt.Errorf("failed to prepare %s: %w", path, err)
-	}
-	return stmt, nil
-}
-
 func CountIncorrectGuesses(guesses [][]LetterResult) int {
 	incorrect := 0
 
@@ -897,6 +919,32 @@ func (s *Service) PrintFullPuzzle() error {
 
 		fmt.Printf("Tier %d (%d-letter): %s\n", i+1, word.Length, word.Word)
 		prevMask = word.LetterMask
+	}
+
+	return nil
+}
+
+func (s *Service) InitializeTodayWordChain() error {
+	loc, _ := time.LoadLocation("America/New_York")
+	today := time.Now().In(loc).Format("2006-01-02")
+
+	if s.WordChainDate != today || len(s.WordChain) != 11 { // 1 given word, 10 words to guess
+		row := s.readWordChain.QueryRow(
+			sql.Named("date", today),
+		)
+
+		var rawJSON string
+		if err := row.Scan(&rawJSON); err != nil {
+			return fmt.Errorf("InitializeTodayWordChain scan failed: %w", err)
+		}
+
+		var chain []string
+		if err := json.Unmarshal([]byte(rawJSON), &chain); err != nil {
+			return fmt.Errorf("InitializeTodayWordChain unmarshal failed: %w", err)
+		}
+
+		s.WordChain = chain
+		s.WordChainDate = today
 	}
 
 	return nil
