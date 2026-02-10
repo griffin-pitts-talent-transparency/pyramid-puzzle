@@ -42,7 +42,7 @@
     <link rel="manifest" href="/site.webmanifest?v=2.0">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="/css/style.css?v=2.0">
+    <link rel="stylesheet" href="/css/style.css?v=2.1">
     <script>
         (function () {
             const htmlVersion = 'v2.0';
@@ -85,7 +85,7 @@
     <div class="word-chain-game-layout">
         <div class="centered-text">
             <p class="game-instructions">
-                Guess each word in the fewest attempts possible. Each word is linked to the next, like "fire -> station." Failing a guess will increment the counter and give you a letter!
+                Guess each word in the fewest attempts possible. Each word is linked to the next, like "<span class="word-chain-hint-letter">fire</span> -> <span class="word-chain-solved-letter">station</span>." Failing a guess will increment the counter and give you a letter!
             </p>
         </div>
         <div id="wordChainGameContainer" class="word-chain-game-container">
@@ -167,6 +167,25 @@
                 <button class="key">M</button>
                 <button class="key backspace">⌫</button>
             </div>
+        </div>
+    </div>
+
+    <div id="word-chain-win-modal" class="word-chain-modal hidden">
+        <div class="word-chain-modal-box">
+            <div class="word-chain-modal-close-button-container">
+                <h1>You Win!</h1>
+                <button id="word-chain-close-modal" class="primary-cta">Close</button>
+            </div>
+            <div id="wordChainModalResultsText" class="word-chain-modal-results-text">
+
+            </div>
+            <h3>Share Your Results</h3>
+            <button id="copyToClipboard" class="primary-cta share-btn">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v16h11a2 2 0 002-2V7a2 2 0 00-2-2zm-1 17H8V7h10v15z" />
+                </svg>
+                &nbsp;Copy
+            </button>
         </div>
     </div>
     

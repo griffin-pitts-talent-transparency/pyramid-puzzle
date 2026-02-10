@@ -545,3 +545,221 @@ func testing_getNextHintLettersNew(guesses []wordChainGuess) []string {
 
 	return results
 }
+
+func manualTest_getActiveWordIndex() {
+	tests := []struct {
+		name     string
+		guesses  []wordChainGuess
+		expected int
+	}{
+		{
+			name: "test 1",
+			guesses: []wordChainGuess{
+				{Word: "xxxxx", Result: false}, // index[1] storm (guess 1) - return 1
+			},
+			expected: 1, // fill in
+		},
+		{
+			name: "test 2",
+			guesses: []wordChainGuess{
+				{Word: "xxxxx", Result: false}, // index[1] storm (guess 1) - return 1
+				{Word: "yyyyy", Result: false}, // index[1] storm (guess 2) - return 1
+			},
+			expected: 1, // fill in
+		},
+		{
+			name: "test 3",
+			guesses: []wordChainGuess{
+				{Word: "storm", Result: true},  // index[1] storm (guess 1) - return 2
+				{Word: "aaaaa", Result: false}, // index[2] drain (guess 1) - return 2
+			},
+			expected: 2, // fill in
+		},
+		{
+			name: "test 4",
+			guesses: []wordChainGuess{
+				{Word: "storm", Result: true}, // index[1] storm (guess 1) - return 2
+				{Word: "drain", Result: true}, // index[2] drain (guess 1) - return 3
+				{Word: "aaaa", Result: false}, // index[3] trap (guess 1) - return 3
+				{Word: "bbbb", Result: false}, // index[3] trap (guess 2) - return 3
+			},
+			expected: 3, // fill in
+		},
+		{
+			name: "test 5",
+			guesses: []wordChainGuess{
+				{Word: "storm", Result: true}, // index[1] storm (guess 1) - return 2
+				{Word: "drain", Result: true}, // index[2] drain (guess 1) - return 3
+				{Word: "aaaa", Result: false}, // index[3] trap (guess 1) - return 3
+				{Word: "bbbb", Result: false}, // index[3] trap (guess 2) - return 3
+				{Word: "bbbb", Result: false}, // index[3] trap (guess 2) - return 3
+				{Word: "bbbb", Result: false}, // index[4] trap (guess 2) - return 4
+			},
+			expected: 4, // fill in
+		},
+		{
+			name: "test 6",
+			guesses: []wordChainGuess{
+				{Word: "storm", Result: true}, // index[1] storm (guess 1) - return 2
+				{Word: "drain", Result: true}, // index[2] drain (guess 1) - return 3
+				{Word: "aaaa", Result: false}, // index[3] trap (guess 1) - return 3
+				{Word: "bbbb", Result: false}, // index[3] trap (guess 2) - return 3
+				{Word: "bbbb", Result: false}, // index[3] trap (guess 3) - return 4
+				{Word: "bbbb", Result: false}, // index[4] house (guess 1) - return 4
+				{Word: "bbbb", Result: false}, // index[4] house (guess 2) - return 4
+				{Word: "bbbb", Result: false}, // index[4] house (guess 3) - return 4
+				{Word: "bbbb", Result: false}, // index[4] house (guess 4) - return 5
+				{Word: "bbbb", Result: false}, // index[5] cat (guess 1) - return 5
+			},
+			expected: 5, // fill in
+		},
+		{
+			name: "test 7",
+			guesses: []wordChainGuess{
+				{Word: "storm", Result: true}, // index[1] storm (guess 1) - return 2
+				{Word: "drain", Result: true}, // index[2] drain (guess 1) - return 3
+				{Word: "aaaa", Result: false}, // index[3] trap (guess 1) - return 3
+				{Word: "bbbb", Result: false}, // index[3] trap (guess 2) - return 3
+				{Word: "bbbb", Result: false}, // index[3] trap (guess 3) - return 4
+				{Word: "bbbb", Result: false}, // index[4] house (guess 1) - return 4
+				{Word: "bbbb", Result: false}, // index[4] house (guess 2) - return 4
+				{Word: "bbbb", Result: false}, // index[4] house (guess 3) - return 4
+				{Word: "bbbb", Result: false}, // index[4] house (guess 4) - return 5
+				{Word: "bbbb", Result: true},  // index[5] cat (guess 1) - return 6
+			},
+			expected: 6, // fill in
+		},
+		{
+			name: "test 8",
+			guesses: []wordChainGuess{
+				{Word: "storm", Result: true},  // index[1] storm (guess 1) - return 2
+				{Word: "drain", Result: true},  // index[2] drain (guess 1) - return 3
+				{Word: "aaaa", Result: false},  // index[3] trap (guess 1) - return 3
+				{Word: "bbbb", Result: false},  // index[3] trap (guess 2) - return 3
+				{Word: "bbbb", Result: false},  // index[3] trap (guess 3) - return 4
+				{Word: "bbbb", Result: false},  // index[4] house (guess 1) - return 4 ho
+				{Word: "bbbb", Result: false},  // index[4] house (guess 2) - return 4 hou
+				{Word: "bbbb", Result: false},  // index[4] house (guess 3) - return 4 hous
+				{Word: "bbbb", Result: false},  // index[4] house (guess 4) - return 5 house
+				{Word: "cat", Result: true},    // index[5] cat (guess 1) - return 6
+				{Word: "rescue", Result: true}, // index[6] rescue (guess 1) - return 7
+			},
+			expected: 7, // fill in
+		},
+		{
+			name: "test 9",
+			guesses: []wordChainGuess{
+				{Word: "storm", Result: true},  // index[1] storm (guess 1) - return 2
+				{Word: "drain", Result: true},  // index[2] drain (guess 1) - return 3
+				{Word: "aaaa", Result: false},  // index[3] trap (guess 1) - return 3
+				{Word: "bbbb", Result: false},  // index[3] trap (guess 2) - return 3
+				{Word: "bbbb", Result: false},  // index[3] trap (guess 3) - return 4
+				{Word: "bbbb", Result: false},  // index[4] house (guess 1) - return 4
+				{Word: "bbbb", Result: false},  // index[4] house (guess 2) - return 4
+				{Word: "bbbb", Result: false},  // index[4] house (guess 3) - return 4
+				{Word: "bbbb", Result: false},  // index[4] house (guess 4) - return 5
+				{Word: "cat", Result: true},    // index[5] cat (guess 1) - return 6
+				{Word: "rescue", Result: true}, // index[6] rescue (guess 1) - return 7 do
+				{Word: "ppp", Result: false},   // index[7] dog (guess 1) - return 7 dog
+				{Word: "ppp", Result: false},   // index[7] dog (guess 2) - return 8
+			},
+			expected: 8, // fill in
+		},
+		{
+			name: "test 10",
+			guesses: []wordChainGuess{
+				{Word: "storm", Result: true},  // index[1] storm (guess 1) - return 2
+				{Word: "drain", Result: true},  // index[2] drain (guess 1) - return 3
+				{Word: "aaaa", Result: false},  // index[3] trap (guess 1) - return 3
+				{Word: "bbbb", Result: false},  // index[3] trap (guess 2) - return 3
+				{Word: "bbbb", Result: false},  // index[3] trap (guess 3) - return 4
+				{Word: "bbbb", Result: false},  // index[4] house (guess 1) - return 4
+				{Word: "bbbb", Result: false},  // index[4] house (guess 2) - return 4
+				{Word: "bbbb", Result: false},  // index[4] house (guess 3) - return 4
+				{Word: "bbbb", Result: false},  // index[4] house (guess 4) - return 5
+				{Word: "cat", Result: true},    // index[5] cat (guess 1) - return 6
+				{Word: "rescue", Result: true}, // index[6] rescue (guess 1) - return 7
+				{Word: "ppp", Result: false},   // index[7] dog (guess 1) - return 7
+				{Word: "ppp", Result: false},   // index[7] dog (guess 2) - return 8
+				{Word: "pppp", Result: false},  // index[8] park (guess 1) - return 8
+			},
+			expected: 8, // fill in
+		},
+		{
+			name: "test 10",
+			guesses: []wordChainGuess{
+				{Word: "aaaaa", Result: false}, // index[1] storm (guess 1) - return 1 st
+				{Word: "aaaaa", Result: false}, // index[1] storm (guess 2) - return 1 sto
+				{Word: "aaaaa", Result: false}, // index[1] storm (guess 3) - return 1 stor
+				{Word: "aaaaa", Result: false}, // index[1] storm (guess 4) - return 2 storm
+				{Word: "aaaaa", Result: false}, // index[2] drain (guess 1) - return 2 dr
+				{Word: "aaaaa", Result: false}, // index[2] drain (guess 2) - return 2 dra
+				{Word: "aaaaa", Result: false}, // index[2] drain (guess 3) - return 2 drai
+				{Word: "aaaaa", Result: false}, // index[2] drain (guess 4) - return 3 drain
+				{Word: "aaaa", Result: false},  // index[3] trap (guess 1) - return 3 tr
+				{Word: "aaaa", Result: false},  // index[3] trap (guess 2) - return 3 tra
+				{Word: "aaaa", Result: false},  // index[3] trap (guess 3) - return 3 trap
+				{Word: "aaaaa", Result: false}, // index[4] house (guess 1) - return 4 ho
+			},
+			expected: 4, // fill in
+		},
+		{
+			name: "test 11",
+			guesses: []wordChainGuess{
+				{Word: "aaaaa", Result: false}, // index[1] storm (guess 1) - return 1 st
+				{Word: "aaaaa", Result: false}, // index[1] storm (guess 2) - return 1 sto
+				{Word: "aaaaa", Result: false}, // index[1] storm (guess 3) - return 1 stor
+				{Word: "aaaaa", Result: false}, // index[1] storm (guess 4) - return 2 storm
+				{Word: "aaaaa", Result: false}, // index[2] drain (guess 1) - return 2 dr
+				{Word: "aaaaa", Result: false}, // index[2] drain (guess 2) - return 2 dra
+				{Word: "aaaaa", Result: false}, // index[2] drain (guess 3) - return 2 drai
+				{Word: "aaaaa", Result: false}, // index[2] drain (guess 4) - return 3 drain
+				{Word: "aaaa", Result: false},  // index[3] trap (guess 1) - return 3
+				{Word: "aaaa", Result: false},  // index[3] trap (guess 2) - return 3
+				{Word: "aaaa", Result: false},  // index[3] trap (guess 3) - return 4
+				{Word: "aaaaa", Result: false}, // index[4] house (guess 1) - return 4
+				{Word: "aaaaa", Result: false}, // index[4] house (guess 2) - return 4
+			},
+			expected: 4, // fill in
+		},
+	}
+
+	for _, t := range tests {
+		result := test_getActiveWordIndex(t.guesses)
+
+		pass := "❌no"
+		if result == t.expected {
+			pass = "✅yes"
+		}
+
+		fmt.Printf("---%s---\n", t.name)
+		fmt.Printf("Expected: %d\n", t.expected)
+		fmt.Printf("Result:   %d\n", result)
+		fmt.Printf("Passed:   %s\n", pass)
+	}
+}
+
+func test_getActiveWordIndex(guesses []wordChainGuess) int {
+	result := 1
+	var currentChainWordLength int
+	var consecutiveWrongGuesses int
+	chainWordIndex := 1
+	for i := 0; i < len(guesses); i++ {
+		guessResult := guesses[i].Result
+		currentChainWordLength = len(CACHED_WORD_CHAIN.Chain[chainWordIndex])
+		if guessResult {
+			result++
+			chainWordIndex++
+			consecutiveWrongGuesses = 0
+		} else {
+			consecutiveWrongGuesses++
+			if consecutiveWrongGuesses == (currentChainWordLength - 1) {
+				result++
+				consecutiveWrongGuesses = 0
+				chainWordIndex++
+			}
+		}
+	}
+
+	return result
+}

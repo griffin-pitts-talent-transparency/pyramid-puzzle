@@ -3,7 +3,6 @@ package word_chain
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"lebron-games/internal/auth"
 	"lebron-games/internal/db"
 	"log"
@@ -19,8 +18,9 @@ type wordChainStartingValues struct {
 }
 
 type wordChainGuessResponse struct {
-	Result     bool `json:"result"`
-	NextLetter byte `json:"next_letter"`
+	Result        bool `json:"result"`
+	NextLetter    byte `json:"next_letter"`
+	TotalAttempts int  `json:"total_attempts"`
 }
 
 type incomingWordChainGuess struct {
@@ -126,26 +126,40 @@ func validateGuess(r *http.Request) wordChainGuessResponse {
 	cognitoSub := auth.ValidateAndExtractCognitoSub(r)
 	var matchResult bool
 	var nextLetter byte
-	if cognitoSub != nil {
+	var totalAttempts int
+	if cognitoSub != nil && len(CACHED_WORD_CHAIN.Chain) > 0 {
 		loadTodayWordChain()
 		var req incomingWordChainGuess
 		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		guess := strings.ToLower(req.Guess)
 
-		matchResult = len(CACHED_WORD_CHAIN.Chain) > req.Index &&
-			strings.ToLower(CACHED_WORD_CHAIN.Chain[req.Index]) == guess
+		// Read current state
+		userGuesses := readWordChainGuessesBySub(*cognitoSub)
+		activeIndex := getActiveWordIndex(userGuesses)
+
+		// Reject out-of-sync or duplicate submits
+		if req.Index != activeIndex {
+			matchResult = false
+		} else {
+			matchResult = len(CACHED_WORD_CHAIN.Chain) > req.Index &&
+				strings.ToLower(CACHED_WORD_CHAIN.Chain[req.Index]) == guess
+		}
 
 		appendWordChainGuessBySub(*cognitoSub, guess, matchResult)
 		if !matchResult {
-			fmt.Println("Match result negative; calculating next hint")
-			userGuesses := readWordChainGuessesBySub(*cognitoSub)
+			userGuesses = readWordChainGuessesBySub(*cognitoSub)
 			nextLetter = getNextLetterHint(userGuesses, req.Index)
+		}
+		if userGuesses != nil {
+			totalAttempts = countIncorrectGuesses(userGuesses)
+
 		}
 	}
 	return wordChainGuessResponse{
-		Result:     matchResult,
-		NextLetter: nextLetter,
+		Result:        matchResult,
+		NextLetter:    nextLetter,
+		TotalAttempts: totalAttempts,
 	}
 }
 
@@ -289,13 +303,38 @@ func getWordChainWordLengths() []int {
 }
 
 func countIncorrectGuesses(guesses []wordChainGuess) int {
-	var count int
+	count := 0
 	for _, g := range guesses {
 		if !g.Result {
 			count++
 		}
 	}
 	return count
+}
+
+func getActiveWordIndex(guesses []wordChainGuess) int {
+	result := 1
+	var currentChainWordLength int
+	var consecutiveWrongGuesses int
+	chainWordIndex := 1
+	for i := 0; i < len(guesses); i++ {
+		guessResult := guesses[i].Result
+		currentChainWordLength = len(CACHED_WORD_CHAIN.Chain[chainWordIndex])
+		if guessResult {
+			result++
+			chainWordIndex++
+			consecutiveWrongGuesses = 0
+		} else {
+			consecutiveWrongGuesses++
+			if consecutiveWrongGuesses == (currentChainWordLength - 1) {
+				result++
+				consecutiveWrongGuesses = 0
+				chainWordIndex++
+			}
+		}
+	}
+
+	return result
 }
 
 /*
@@ -402,7 +441,11 @@ func loadTodayWordChain() {
 						Date:  today,
 						Chain: chain,
 					}
+				} else {
+					CACHED_WORD_CHAIN = wordChainCache{}
 				}
+			} else {
+				CACHED_WORD_CHAIN = wordChainCache{}
 			}
 		}
 	}
@@ -431,5 +474,23 @@ func appendWordChainGuessBySub(cognitoSub string, word string, result bool) {
 			)
 
 		}
+	}
+}
+
+// DEV
+func PrintTodayWordChain() {
+	loadTodayWordChain()
+
+	if len(CACHED_WORD_CHAIN.Chain) == 0 {
+		log.Println("❌ No word chain loaded for today")
+		return
+	}
+
+	loc, _ := time.LoadLocation("America/New_York")
+	today := time.Now().In(loc).Format("2006-01-02")
+
+	log.Printf("🧩 Word Chain for %s:\n", today)
+	for i, word := range CACHED_WORD_CHAIN.Chain {
+		log.Printf("%2d) %s\n", i, word)
 	}
 }

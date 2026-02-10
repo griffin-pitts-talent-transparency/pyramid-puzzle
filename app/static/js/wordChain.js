@@ -1,4 +1,4 @@
-import { getUserAsync } from "./auth.js"; 
+import { getUserAsync } from "./auth.js";
 
 let CURRENT_WORD_INDEX = 0;
 const NUM_WORDS = 11;
@@ -36,14 +36,34 @@ function renderCurrentWord() {
     const current = document.getElementById(`word-${CURRENT_WORD_INDEX}`);
     if (current) {
         current.classList.add("word-chain-current-word");
+        renderScrollCurrentWordIntoView();
     }
+}
+
+function renderScrollCurrentWordIntoView() {
+    const container = document.getElementById("wordChainGameContainer");
+    const current = document.querySelector(".word-chain-current-word");
+
+    if (!container || !current) return;
+
+    current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+    });
 }
 
 function renderCorrectWord() {
     const activeWord = document.querySelector(".word-chain-current-word");
     if (activeWord) {
         activeWord.classList.remove("word-chain-current-word");
-        activeWord.classList.add("word-chain-correct-word");
+        // activeWord.classList.add("word-chain-correct-word");
+
+        const tiles = activeWord.querySelectorAll(".word-chain-tile");
+        tiles.forEach(tile => {
+            if (!tile.classList.contains("word-chain-hint-letter")) {
+                tile.classList.add("word-chain-solved-letter");
+            }
+        });
     }
 }
 
@@ -90,77 +110,85 @@ function extractGuess() {
     return result;
 }
 
+let GUESS_SUBMITTED = false;
 async function handleGuessSubmitted() {
-    const activeRow = document.querySelectorAll(`#word-${CURRENT_WORD_INDEX} .word-chain-tile`);
-    const playerGuess = extractGuess();
-    console.log("SUBMITTED PLAYER GUESS IS: " + playerGuess);
-    console.log("CURRENT WORD INDEX IS: " + CURRENT_WORD_INDEX);
-    if (playerGuess.length === activeRow.length) {
-        const user = await getAndRequireAuthenticatedUserAsync();
-        if (user && !user.expired && user.id_token) {
-            try {
-                const res = await fetch("/api/v1.0/word-chain-validate-guess", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${user.id_token}`
-                    },
-                    body: JSON.stringify({
-                        guess: playerGuess,
-                        index: CURRENT_WORD_INDEX
-                    })
-                });
+    if (!GUESS_SUBMITTED) {
+        let totalAttempts = -1;
+        GUESS_SUBMITTED = true; // block multiple submit attempts for a single word
+        const activeRow = document.querySelectorAll(`#word-${CURRENT_WORD_INDEX} .word-chain-tile`);
+        const playerGuess = extractGuess();
+        console.log("SUBMITTED PLAYER GUESS IS: " + playerGuess);
+        console.log("CURRENT WORD INDEX IS: " + CURRENT_WORD_INDEX);
+        if (playerGuess.length === activeRow.length) {
+            const user = await getAndRequireAuthenticatedUserAsync();
+            if (user && !user.expired && user.id_token) {
+                try {
+                    const res = await fetch("/api/v1.0/word-chain-validate-guess", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${user.id_token}`
+                        },
+                        body: JSON.stringify({
+                            guess: playerGuess,
+                            index: CURRENT_WORD_INDEX
+                        })
+                    });
 
-                const data = await res.json();
-                console.log("GUESS VALIDATED; JSON:");
-                console.log(JSON.stringify(data));
-                if(data) {
-                    if (data.result) {
-                        console.log("CORRECT GUESS - RENDERING CORRECT GUESS");
-                        renderCorrectWord();
-                        if(CURRENT_WORD_INDEX === NUM_WORDS) {
-                            // win
-                            console.log("win");
-                        } else {
+                    const data = await res.json();
+                    console.log("GUESS VALIDATED; JSON:");
+                    console.log(JSON.stringify(data));
+                    if(data) {
+                        totalAttempts = data.total_attempts;
+                        console.log("TOTAL ATTEMPTS COUNT: " + totalAttempts);
+                        if (data.result) {
+                            console.log("CORRECT GUESS - RENDERING CORRECT GUESS");
+                            renderCorrectWord();
                             CURRENT_WORD_INDEX++;
-                            // renderActiveRow();
-                        }
-                    } else {
-                        console.log("INCORRECT GUESS - RENDERING INCORRECT GUESS");
-                        for(let i = 0; i < playerGuess.length; i++) {
-                            renderLetterPop(CURRENT_WORD_INDEX);
-                        }
-                        const nextLetter = String.fromCharCode(data.next_letter);
-                        if (/^[a-z]$/.test(nextLetter)) {
-                            renderLetterPush(CURRENT_WORD_INDEX, nextLetter, "word-chain-hint-letter");
-                            // handle the case where the entire word is now hint letters
-                            const tiles = document.querySelectorAll(`#word-${CURRENT_WORD_INDEX} .word-chain-tile`);
-                            const allHint = Array.from(tiles).every(tile =>
-                                tile.classList.contains("word-chain-hint-letter") && tile.textContent.trim() !== "");
-
-                            if (allHint) {
-                                console.log("ALL HINT LETTERS - ADVANCING WORD INDEX");
-                                CURRENT_WORD_INDEX++;
-                                if (CURRENT_WORD_INDEX === NUM_WORDS) {
-                                    console.log("win");
-                                } else {
-                                    // renderActiveRow();
-                                }
+                            if(CURRENT_WORD_INDEX === NUM_WORDS) {
+                                // win
+                                console.log("win");
+                                renderShowWordChainWinModal(totalAttempts);
+                            } else {
+                                // renderActiveRow();
                             }
                         } else {
-                            console.warn("Invalid hint letter received, skipping render:", data.next_letter);
+                            console.log("INCORRECT GUESS - RENDERING INCORRECT GUESS");
+                            for(let i = 0; i < playerGuess.length; i++) {
+                                renderLetterPop(CURRENT_WORD_INDEX);
+                            }
+                            const nextLetter = String.fromCharCode(data.next_letter);
+                            if (/^[a-z]$/.test(nextLetter)) {
+                                renderLetterPush(CURRENT_WORD_INDEX, nextLetter, "word-chain-hint-letter");
+                                // handle the case where the entire word is now hint letters
+                                const tiles = document.querySelectorAll(`#word-${CURRENT_WORD_INDEX} .word-chain-tile`);
+                                const allHint = Array.from(tiles).every(tile =>
+                                    tile.classList.contains("word-chain-hint-letter") && tile.textContent.trim() !== "");
+
+                                if (allHint) {
+                                    console.log("ALL HINT LETTERS - ADVANCING WORD INDEX");
+                                    CURRENT_WORD_INDEX++;
+                                    if (CURRENT_WORD_INDEX === NUM_WORDS) {
+                                        console.log("win");
+                                        renderShowWordChainWinModal(totalAttempts);
+                                    } else {
+                                        // renderActiveRow();
+                                    }
+                                }
+                            } else {
+                                console.warn("Invalid hint letter received, skipping render:", data.next_letter);
+                            }
                         }
+                    } else {
+                        // TODO: handle where data is null
+                        console.log("ERROR - VALIDATE GUESS DATA IS NULL");
                     }
-                } else {
-                    // TODO: handle where data is null
-                    console.log("ERROR - VALIDATE GUESS DATA IS NULL");
+                } catch {
                 }
-            } catch {
-            }
-            if(CURRENT_WORD_INDEX < NUM_WORDS) {
                 renderCurrentWord();
             }
         }
+        GUESS_SUBMITTED = false;
     }
 }
 
@@ -208,6 +236,7 @@ function initializeKeyboard() {
 
 function initializeGame(gameState) {
     if (gameState) {
+        let totalAttempts = gameState.total_attempts ?? -1;
         const solvedGuesses = Array.isArray(gameState.guesses)
             ? gameState.guesses.filter(g => g.result === true).map(g => g.word) : [];
 
@@ -255,8 +284,99 @@ function initializeGame(gameState) {
 
         }
         // renderActiveRow();
-        renderCurrentWord();
+        if(CURRENT_WORD_INDEX < NUM_WORDS) {
+            renderCurrentWord();
+        } else {
+            // win
+            renderShowWordChainWinModal(totalAttempts);
+        }
     }
+}
+
+function renderShowWordChainWinModal(incorrectGuessCount) {
+    document.getElementById("word-chain-win-modal")?.classList.remove("hidden");
+
+    const textContainer = document.getElementById("wordChainModalResultsText");
+    if (textContainer && incorrectGuessCount >= 0) {
+        textContainer.textContent = ""; // Clear previous content
+
+        const spanClass = incorrectGuessCount === 0
+            ? "perfect-score"
+            : incorrectGuessCount <= 3
+                ? "low-mistake"
+                : incorrectGuessCount <= 6
+                    ? "mid-mistake"
+                    : "high-mistake";
+
+        const plural = incorrectGuessCount === 1 ? "guess" : "guesses";
+
+        textContainer.innerHTML =
+            `You solved the word chain with <span class="${spanClass}">${incorrectGuessCount}</span> incorrect ${plural}!`;
+    }
+}
+
+function buildWordChainShareEmojiResultsFromDOM() {
+    const container = document.getElementById("wordChainGameContainer");
+    const dateNYC = new Date().toLocaleDateString("en-US", {
+        timeZone: "America/New_York"
+    });
+
+    let incorrectGuessCount = -1;
+    const resultElement = document.getElementById("wordChainModalResultsText");
+    if (resultElement) {
+        const span = resultElement.querySelector("span");
+        if (span) {
+            incorrectGuessCount = parseInt(span.textContent.trim(), 10);
+        }
+    }
+
+    let emojiOutput = "";
+    if (container) {
+        const wordRows = container.querySelectorAll(".word-chain-word");
+        wordRows.forEach(row => {
+            const tiles = row.querySelectorAll(".word-chain-tile");
+            let rowOutput = "";
+
+            tiles.forEach(tile => {
+                if (tile.classList.contains("word-chain-solved-letter")) {
+                    rowOutput += "🟪";
+                } else if (tile.classList.contains("word-chain-hint-letter")) {
+                    rowOutput += "🟧";
+                } else {
+                    rowOutput += "⬛";
+                }
+            });
+
+            if (rowOutput.trim().length > 0) {
+                emojiOutput += rowOutput + "\n";
+            }
+        });
+    }
+
+    const header =
+        `Word Chain - ${dateNYC}\n` +
+        `Incorrect Guesses - ${incorrectGuessCount >= 0 ? incorrectGuessCount : "?"}\n` +
+        `https://lebron-games.com/wordChain/\n`;
+
+    return `${header}\n${emojiOutput.trim()}`;
+}
+
+function showWordChainToast(message) {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.className = 'toast-message';
+    // document.body.appendChild(toast);
+    document.querySelector('.word-chain-modal').after(toast);
+
+    // Start fade-out after 1.5 seconds
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+    }, 1500);
+
+    // Remove from DOM after animation ends
+    toast.addEventListener('transitionend', () => {
+        toast.remove();
+    });
 }
 
 /*
@@ -297,4 +417,22 @@ document.addEventListener("DOMContentLoaded", async () => {
             window.location.href = "/signin";
         });
     }
+
+    /*
+        Initialize share buttons
+    */
+    const copyBtn = document.getElementById("copyToClipboard");
+
+    const buildShareText = () => buildWordChainShareEmojiResultsFromDOM();
+
+    if (copyBtn) {
+        copyBtn.addEventListener("click", () => {
+            navigator.clipboard.writeText(buildShareText());
+            showWordChainToast("Copied!");
+        });
+    }
+
+    document.getElementById("word-chain-close-modal")?.addEventListener("click", () => {
+        document.getElementById("word-chain-win-modal")?.classList.add("hidden");
+    });
 });

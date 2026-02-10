@@ -1099,33 +1099,28 @@ Solved words all-time leaderboard
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* height: min(85vw, 85vh); */
-    height: 85vh;
+    height: 85dvh;
     padding-bottom: 2px;
 }
 
 .word-chain-game-layout .word-chain-game-container {
     flex: 1;
-    /* min-height: 0; */
     overflow-y: auto;
     overflow-x: hidden;
 }
-
-/* .word-chain-game-layout .keyboard {
-    position: sticky;
-    bottom: 0;
-    flex-shrink: 0;
-    background-color: var(--true-white);
-} */
 
 .word-chain-game-container {
     display: flex;
     flex-direction: column;
     min-width: 35vw;
+    scroll-padding-bottom: 120px;
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
 .word-chain-word {
     display: flex;
+    padding-top: 4px;
 }
 
 .word-chain-tile {
@@ -1133,6 +1128,7 @@ Solved words all-time leaderboard
     height: 48px;
     color: var(--true-black);
     box-sizing: border-box;
+    font-family: inherit;
     font-size: 24px;
     font-weight: bold;
     text-transform: uppercase;
@@ -1158,22 +1154,98 @@ Solved words all-time leaderboard
     color: var(--vibrant-purple);
 }
 
-.word-chain-word.word-chain-current-word .word-chain-tile {
-    /* color: var(--vibrant-purple); */
+.word-chain-word.word-chain-current-word {
+    box-shadow: 0 0 8px 4px var(--present-orange);
+    border-radius: 6px;
+    z-index: 1;
 }
-
-.word-chain-word.word-chain-correct-word .word-chain-tile {
-    color: var(--true-white);
-    background-color: var(--vibrant-purple);
-}
-
-@media screen and (max-width: 420px) {
+@media screen and (max-width: 600px) {
     .word-chain-tile {
-        width: 42px;
-        height: 42px;
-        font-size: 18px;
+        width: 36px;
+        height: 36px;
+        font-size: 32px;
+        font-weight: bolder;
+    }
+    .word-chain-tile:empty {
+        width: 28px;
+        height: 32px;
     }
 }
+
+.word-chain-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--true-white);
+    padding: 16px 24px;
+    text-align: center;
+    z-index: 5;
+    border: 1px solid var(--vibrant-purple);
+    border-radius: 12px;
+    box-shadow: -4px 3px var(--vibrant-purple);
+    pointer-events: auto;
+}
+
+.word-chain-modal-box {
+    background: var(--true-white, #fff);
+    padding: 16px 24px;
+    border-radius: 6px;
+    /* font-size: 1.2rem; */
+    text-align: center;
+    /* min-width: 300px; */
+}
+@media screen and (max-width: 600px) {
+    .word-chain-modal-box {
+        padding: 0;
+        min-width: 80dvw;
+    }
+}
+
+.word-chain-modal-close-button-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.word-chain-modal-close-button-container button {
+    height: 35px;
+    width: 60px;
+}
+
+.word-chain-modal-close-button-container h1 {
+    margin: 0;
+}
+
+.word-chain-modal-results-text {
+    font-size: 1.2rem;
+    margin-top: 24px;
+}
+
+.perfect-score {
+    color: var(--vibrant-purple);
+    font-weight: bold;
+    font-size: 1.8rem;
+    text-shadow:
+        0 0 1px black,
+        0 0 3px var(--vibrant-purple),
+        0 0 5px var(--vibrant-purple);
+}
+
+.low-mistake {
+    color: var(--present-orange);
+    font-weight: bold;
+}
+
+.mid-mistake {
+    color: var(--miss-gray);
+    font-weight: bold;
+}
+
+.high-mistake {
+    color: red;
+    font-weight: bold;
+}
+
 
 /********************************************************************************/
 /* global (must come last)                                                      */
